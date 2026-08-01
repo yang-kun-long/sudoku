@@ -247,14 +247,19 @@ const techniques = [
     label: '链/AIC',
     title: '链与 AIC：沿箭头读强弱关系',
     level: '专家',
-    summary: '链技巧不是看一堆格子，而是按箭头追踪“共享候选”和“格内双候选切换”。箭头连接的两个格必须共享同一个候选。',
+    summary: '链技巧不是看一堆格子，而是按箭头追踪候选数字之间的关系。实线表示同一双候选格里的强关系，虚线表示不同格共享同一候选时的弱关系。',
     rule: '本例证明第 1 行第 1 列的 9 和第 2 行第 2 列的 9 至少有一个成立，所以同时看到这两个端点的格可以删除 9。',
-    steps: ['端点先固定为候选 9：第 1 行第 1 列与第 2 行第 2 列', '虚线箭头表示两个格共享同一个候选，不能同时取这个候选', '每个中间格都只有两个候选，排除一个后就会被迫取另一个', '最后删除同时看到两个 9 端点的目标格候选 9'],
+    steps: ['端点先固定为候选 9：第 1 行第 1 列与第 2 行第 2 列', '实线在同一个双候选格内部切换，表示这格不是一个候选就必须是另一个候选', '虚线跨格连接同一个候选，表示两个互相看见的位置不能同时取这个候选', '最后删除同时看到两个 9 端点的目标格候选 9'],
     links: [
-      { from: 0, to: 7, relation: 'weak' },
-      { from: 7, to: 24, relation: 'weak' },
-      { from: 24, to: 15, relation: 'weak' },
-      { from: 15, to: 10, relation: 'weak' },
+      { from: 0, fromCandidate: 9, to: 0, toCandidate: 2, relation: 'strong' },
+      { from: 0, fromCandidate: 2, to: 7, toCandidate: 2, relation: 'weak' },
+      { from: 7, fromCandidate: 2, to: 7, toCandidate: 1, relation: 'strong' },
+      { from: 7, fromCandidate: 1, to: 24, toCandidate: 1, relation: 'weak' },
+      { from: 24, fromCandidate: 1, to: 24, toCandidate: 7, relation: 'strong' },
+      { from: 24, fromCandidate: 7, to: 15, toCandidate: 7, relation: 'weak' },
+      { from: 15, fromCandidate: 7, to: 15, toCandidate: 5, relation: 'strong' },
+      { from: 15, fromCandidate: 5, to: 10, toCandidate: 5, relation: 'weak' },
+      { from: 10, fromCandidate: 5, to: 10, toCandidate: 9, relation: 'strong' },
     ],
     terms: [
       { name: '端点', description: '第 1 行第 1 列的 9 与第 2 行第 2 列的 9。链证明两者至少有一个成立。' },
@@ -378,6 +383,19 @@ function guideStyle(guide) {
 function cellPoint(index) {
   return { x: ((index % 9) + 0.5) * 100 / 9, y: (Math.floor(index / 9) + 0.5) * 100 / 9 }
 }
+function candidatePoint(index, number) {
+  if (!number) return cellPoint(index)
+  const cellSize = 100 / 9
+  const localColumn = (number - 1) % 3
+  const localRow = Math.floor((number - 1) / 3)
+  return {
+    x: (index % 9) * cellSize + (localColumn + 0.5) * cellSize / 3,
+    y: Math.floor(index / 9) * cellSize + (localRow + 0.5) * cellSize / 3,
+  }
+}
+function linkPoint(link, edge) {
+  return candidatePoint(link[edge], link[`${edge}Candidate`])
+}
 function replay() {
   paused.value = false
   animationVersion.value += 1
@@ -440,7 +458,7 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
                 <path d="M0,0 L4,2 L0,4 Z"></path>
               </marker>
             </defs>
-            <line v-for="(link, linkIndex) in demoLinks" :key="`${link.from}-${link.to}-${linkIndex}`" :class="['demo-chain-arrow', link.relation]" :style="{ '--delay': `${linkIndex * 0.35}s` }" :x1="cellPoint(link.from).x" :y1="cellPoint(link.from).y" :x2="cellPoint(link.to).x" :y2="cellPoint(link.to).y"></line>
+            <line v-for="(link, linkIndex) in demoLinks" :key="`${link.from}-${link.to}-${linkIndex}`" :class="['demo-chain-arrow', link.relation]" :style="{ '--delay': `${linkIndex * 0.25}s` }" :x1="linkPoint(link, 'from').x" :y1="linkPoint(link, 'from').y" :x2="linkPoint(link, 'to').x" :y2="linkPoint(link, 'to').y"></line>
           </svg>
         </div>
         <figcaption class="demo-legend">
@@ -453,6 +471,8 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
           <template v-else>
             <span v-if="hasPatternCells"><i class="legend-source"></i>推理格</span>
             <span v-if="['y-wing', 'xyz-wing'].includes(activeId)"><i class="legend-pivot"></i>枢轴格</span>
+            <span v-if="activeId === 'chain-aic'"><i class="legend-strong"></i>强关系</span>
+            <span v-if="activeId === 'chain-aic'"><i class="legend-weak"></i>弱关系</span>
             <span><i :class="hasEliminations ? 'legend-target' : 'legend-result'"></i>{{ hasEliminations ? '删除目标' : '结论格' }}</span>
           </template>
         </figcaption>
@@ -571,6 +591,8 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 .legend-companion { background:#f5dfaa; border:1px solid #bd8423; }
 .legend-target { background:transparent; border:2px solid var(--danger); }
 .legend-result { background:#f5dfaa; border:1px solid #bd8423; }
+.legend-strong { background:#256295; }
+.legend-weak { background:linear-gradient(90deg,#9b5b1f 0 45%,transparent 45% 58%,#9b5b1f 58%); border:0 !important; }
 .technique-copy { min-width:0; }
 .level-label { color:var(--accent); font-size:11px; font-weight:800; }
 .technique-copy h2 { margin:8px 0 16px; font-size:clamp(22px,3vw,30px); line-height:1.25; }
