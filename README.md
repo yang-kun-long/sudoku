@@ -6,7 +6,7 @@
 
 ## 运行
 
-安装依赖后运行 `npm run dev`，也可以运行 `npm run build` 构建静态文件。离线筛选人类可解地狱题可运行 `npm run hell:generate -- --attempts 300 --target-additions 5`。
+安装依赖后运行 `npm run dev`，也可以运行 `npm run build` 构建静态文件。离线筛选人类可解地狱题可运行 `npm run hell:generate -- --attempts 300 --target-additions 5`，本地并发筛选可运行 `npm run hell:generate:parallel -- --attempts 2000 --target-additions 20 --workers 4`。
 
 ## 特性
 
