@@ -9,7 +9,7 @@
 - GitHub 仓库：https://github.com/yang-kun-long/sudoku
 - 正式域名：https://shudu.yang.team/
 - 技巧页：https://shudu.yang.team/techniques
-- 最新生产部署：`dpl_ELPid5LcnHGGAi46TQS5niTyucUH`
+- 最新生产部署：`dpl_4eBkPNno87RtRxMpJTwdRYLZmGH6`
 - 当前目录已初始化 `.git`，`main` 跟踪 `origin/main`
 - Vercel CLI：`D:\Program Files\nodejs\node_global\vercel.cmd`
 - 部署命令：`& 'D:\Program Files\nodejs\node_global\vercel.cmd' --prod --yes`
@@ -124,7 +124,7 @@ npm run build
 - 生产环境高级 Worker 能在 Exocet 后返回 `r5c7=9`
 - 生产环境控制台无错误
 - `/HODOKU-GPL-3.0.txt` 返回 200
-- 地狱难度已改为 verified 题库入口；当前题库为空时会提示先运行离线铸题脚本
+- 地狱难度已改为 verified 题库入口；当前已有 5 道 HoDoKu Extreme 高分、完整路径无搜索题
 - 最新生产环境 `/`、`/techniques`、`/HODOKU-GPL-3.0.txt` 返回 200
 - GitHub Action 首次手动运行 `30686001548` 成功完成，1000 次候选未找到合格题，题库仍为空；第二次运行 `30686876446` 已触发并运行中
 
