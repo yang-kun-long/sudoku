@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.dataset-download-*/
+
+.vercel
+/easy.txt
+/expert.txt
+/intermediate.txt
+/simple.txt

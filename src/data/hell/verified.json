@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "generatedAt": null,
+  "criteria": {
+    "openingAdvancedDepth": 1,
+    "allowBruteForce": false,
+    "allowGiveUp": false,
+    "allowIncomplete": false,
+    "notes": "Puzzles must have a human-solvable HoDoKu path and an advanced opening gate."
+  },
+  "puzzles": []
+}
