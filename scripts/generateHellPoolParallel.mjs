@@ -20,6 +20,11 @@ function parseArgs() {
     difficulty: 'Extreme',
     output: defaultOutput,
     maxRuntimeMinutes: 0,
+    source: 'opening-search',
+    minClues: 24,
+    maxClues: 30,
+    searchSteps: 160,
+    buildMinScore: 10,
     minScore: undefined,
     maxScore: undefined,
     tempDir: defaultTempDir,
@@ -33,11 +38,16 @@ function parseArgs() {
     else if (arg === '--difficulty') options.difficulty = readValue()
     else if (arg === '--output') options.output = path.resolve(projectRoot, readValue())
     else if (arg === '--max-runtime-minutes') options.maxRuntimeMinutes = Number(readValue())
+    else if (arg === '--source') options.source = readValue()
+    else if (arg === '--min-clues') options.minClues = Number(readValue())
+    else if (arg === '--max-clues') options.maxClues = Number(readValue())
+    else if (arg === '--search-steps') options.searchSteps = Number(readValue())
+    else if (arg === '--build-min-score') options.buildMinScore = Number(readValue())
     else if (arg === '--min-score') options.minScore = Number(readValue())
     else if (arg === '--max-score') options.maxScore = Number(readValue())
     else if (arg === '--temp-dir') options.tempDir = path.resolve(projectRoot, readValue())
     else if (arg === '--help') {
-      console.log('Usage: node scripts/generateHellPoolParallel.mjs [--attempts 2000] [--target-additions 20] [--workers 4] [--difficulty Extreme] [--max-runtime-minutes 0]')
+      console.log('Usage: node scripts/generateHellPoolParallel.mjs [--attempts 2000] [--target-additions 20] [--workers 4] [--difficulty Extreme] [--source hodoku|de-single|opening-freeze|opening-search|opening-build] [--min-clues 24] [--max-clues 30] [--search-steps 160] [--build-min-score 10] [--max-runtime-minutes 0]')
       process.exit(0)
     }
   }
@@ -87,6 +97,11 @@ function runWorker(workerIndex, options, workerAttempts, workerTarget, outputPat
     '--attempts', String(workerAttempts),
     '--target-additions', String(workerTarget),
     '--difficulty', options.difficulty,
+    '--source', options.source,
+    '--min-clues', String(options.minClues),
+    '--max-clues', String(options.maxClues),
+    '--search-steps', String(options.searchSteps),
+    '--build-min-score', String(options.buildMinScore),
     '--output', path.relative(projectRoot, outputPath),
   ]
   if (Number.isFinite(options.maxRuntimeMinutes) && options.maxRuntimeMinutes > 0) {
