@@ -70,6 +70,15 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
           </ol>
         </section>
 
+        <section v-if="guide.example" class="lesson-block example-block">
+          <h3>{{ guide.example.title }}</h3>
+          <p>{{ guide.example.setup }}</p>
+          <ol>
+            <li v-for="step in guide.example.chain" :key="step">{{ step }}</li>
+          </ol>
+          <p class="example-conclusion">{{ guide.example.conclusion }}</p>
+        </section>
+
         <section class="lesson-block">
           <h3>新手理解</h3>
           <p>{{ guide.noviceTip }}</p>
@@ -116,6 +125,9 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 .lesson-block p { margin:0; }
 .lesson-block ol,.lesson-block ul { margin:0; padding-left:22px; }
 .lesson-block li { padding-left:4px; }
+.example-block { background:linear-gradient(180deg,transparent,rgba(47,111,94,.05)); }
+.example-block p+ol { margin-top:12px; }
+.example-conclusion { margin-top:14px !important; padding:10px 12px; border-left:3px solid var(--accent); background:var(--accent-soft); color:var(--ink) !important; }
 .article-links { display:flex; flex-wrap:wrap; gap:8px; padding-top:20px; border-top:1px solid var(--line); }
 .article-links a { min-height:34px; display:inline-flex; align-items:center; padding:0 10px; border:1px solid var(--line); border-radius:6px; color:var(--accent); text-decoration:none; font-size:13px; font-weight:750; }
 @media (hover:hover) { .guide-nav a:hover,.article-links a:hover,.back-link:hover { border-color:var(--accent); color:var(--accent); } }
