@@ -19,6 +19,7 @@ const focusedNumber = ref(0)
 const hintCells = ref([])
 const hintMessage = ref('')
 const hintChain = ref(null)
+const hintHistory = ref([])
 const lastHintStrategy = ref('')
 const hintLoading = ref(false)
 const difficulty = ref('easy')
@@ -65,6 +66,7 @@ const sourceOptions = [
 
 function setStatus(message, type = '') { status.value = message; statusType.value = type }
 function cellAt(index) { return { row: Math.floor(index / 9), col: index % 9 } }
+function cellName(index) { const { row, col } = cellAt(index); return `第 ${row + 1} 行第 ${col + 1} 列` }
 function isGiven(index) { const { row, col } = cellAt(index); return Boolean(puzzle.value[row]?.[col]) }
 function cellValue(index) { const { row, col } = cellAt(index); return puzzle.value[row]?.[col] || entries.value[index] || '' }
 function cellNotes(index) { return notes.value[index] || [] }
@@ -89,7 +91,7 @@ function isNumberInfluenced(index) {
 }
 
 function saveGame() {
-  localStorage.setItem('sudoku-state', JSON.stringify({ puzzle: puzzle.value, solution: solution.value, entries: entries.value, notes: notes.value, manualGrid: manualGrid.value, manualEditing: manualEditing.value, smartCandidatesEnabled: smartCandidatesEnabled.value, lastHintStrategy: lastHintStrategy.value, difficulty: difficulty.value, sourceChoice: sourceChoice.value, ratingLabel: ratingLabel.value, mistakes: mistakes.value, seconds: seconds.value, id: puzzleId.value, sourceLabel: sourceLabel.value }))
+  localStorage.setItem('sudoku-state', JSON.stringify({ puzzle: puzzle.value, solution: solution.value, entries: entries.value, notes: notes.value, manualGrid: manualGrid.value, manualEditing: manualEditing.value, smartCandidatesEnabled: smartCandidatesEnabled.value, lastHintStrategy: lastHintStrategy.value, hintHistory: hintHistory.value, difficulty: difficulty.value, sourceChoice: sourceChoice.value, ratingLabel: ratingLabel.value, mistakes: mistakes.value, seconds: seconds.value, id: puzzleId.value, sourceLabel: sourceLabel.value }))
 }
 function rememberState() { history.value.push({ entries: entries.value.slice(), notes: notes.value.map((cellNotes) => cellNotes.slice()), smartCandidatesEnabled: smartCandidatesEnabled.value, lastHintStrategy: lastHintStrategy.value }) }
 function startTimer() { clearInterval(timerId); timerId = setInterval(() => { seconds.value += 1 }, 1000) }
@@ -107,6 +109,7 @@ function enterManualMode() {
   pencilMode.value = false
   smartCandidatesEnabled.value = false
   lastHintStrategy.value = ''
+  hintHistory.value = []
   mistakes.value = 0
   seconds.value = 0
   puzzleId.value = '-'
@@ -151,6 +154,7 @@ function newGame() {
   pencilMode.value = false
   smartCandidatesEnabled.value = false
   lastHintStrategy.value = ''
+  hintHistory.value = []
   mistakes.value = 0
   seconds.value = 0
   clearLogicalHint()
@@ -172,6 +176,7 @@ function startManualGame() {
   focusedNumber.value = 0
   smartCandidatesEnabled.value = false
   lastHintStrategy.value = ''
+  hintHistory.value = []
   mistakes.value = 0
   seconds.value = 0
   clearLogicalHint()
@@ -193,6 +198,7 @@ function applySharedPuzzle(sharedPuzzle, sharedSolution, id, source, label, opti
   pencilMode.value = false
   smartCandidatesEnabled.value = false
   lastHintStrategy.value = ''
+  hintHistory.value = []
   mistakes.value = 0
   seconds.value = 0
   clearLogicalHint()
@@ -263,7 +269,7 @@ function loadGame() {
   try {
     const saved = JSON.parse(localStorage.getItem('sudoku-state'))
     if (!saved?.puzzle || !saved?.solution) return newGame()
-    puzzle.value = saved.puzzle; solution.value = saved.solution; entries.value = saved.entries || Array(81).fill(0); notes.value = saved.notes || Array.from({ length: 81 }, () => []); manualGrid.value = saved.manualGrid || Array(81).fill(0); manualEditing.value = saved.manualEditing ?? saved.sourceChoice === 'manual'; smartCandidatesEnabled.value = Boolean(saved.smartCandidatesEnabled); lastHintStrategy.value = saved.lastHintStrategy || ''
+    puzzle.value = saved.puzzle; solution.value = saved.solution; entries.value = saved.entries || Array(81).fill(0); notes.value = saved.notes || Array.from({ length: 81 }, () => []); manualGrid.value = saved.manualGrid || Array(81).fill(0); manualEditing.value = saved.manualEditing ?? saved.sourceChoice === 'manual'; smartCandidatesEnabled.value = Boolean(saved.smartCandidatesEnabled); lastHintStrategy.value = saved.lastHintStrategy || ''; hintHistory.value = Array.isArray(saved.hintHistory) ? saved.hintHistory : []
     difficulty.value = saved.difficulty || 'easy'; sourceChoice.value = saved.sourceChoice || 'mixed'; ratingLabel.value = saved.ratingLabel || ratePuzzle(puzzle.value)
     mistakes.value = saved.mistakes || 0; seconds.value = saved.seconds || 0; puzzleId.value = saved.id || '-'; sourceLabel.value = saved.sourceLabel || '本地生成'; if (manualEditing.value) { clearInterval(timerId); setStatus('请在棋盘中输入题目。') } else startTimer()
   } catch { newGame() }
@@ -372,6 +378,27 @@ function cancelNumberLongPress() {
 function handleNumberButtonClick(number, event) {
   if (event.detail === 0) handleNumberClick(number)
 }
+function summarizeHintUpdates(hint) {
+  return hint.updates.map((update) => update.filledValue
+    ? `${cellName(update.index)}填 ${update.filledValue}`
+    : `${cellName(update.index)}排除 ${update.eliminatedCandidate}`).join('，')
+}
+function rememberHint(hint) {
+  const guide = findTechniqueGuide(hint.strategy)
+  hintHistory.value = [
+    {
+      id: `${Date.now()}-${hintHistory.value.length + 1}`,
+      number: hintHistory.value.length + 1,
+      time: timerText.value,
+      strategy: hint.strategy,
+      label: guide?.label || hint.strategyLabel || hint.strategy,
+      message: hint.message,
+      result: summarizeHintUpdates(hint),
+      cells: [...new Set(hint.cells || [])].map(cellName).join('、'),
+    },
+    ...hintHistory.value,
+  ]
+}
 function eraseSelected() { if (manualEditing.value) return enterManualNumber(0); if (selected.value < 0) return setStatus('请先选择一个空格。', 'error'); if (isGiven(selected.value)) return; rememberState(); lastHintStrategy.value = ''; entries.value[selected.value] = 0; notes.value[selected.value] = []; setStatus('已清除当前格子。'); saveGame() }
 function undo() { const previous = history.value.pop(); if (!previous) return setStatus('没有可以撤销的操作。'); if (Array.isArray(previous)) entries.value = previous; else { entries.value = previous.entries; notes.value = previous.notes; smartCandidatesEnabled.value = Boolean(previous.smartCandidatesEnabled); lastHintStrategy.value = previous.lastHintStrategy || '' }; setStatus('已撤销上一步操作。'); saveGame() }
 async function giveHint() {
@@ -425,6 +452,7 @@ async function giveHint() {
   hintMessage.value = hint.message
   hintChain.value = hint.chain || null
   lastHintStrategy.value = hint.strategy
+  rememberHint(hint)
   setStatus('已标出下一步推理范围。', 'success')
   saveGame()
 }
@@ -487,7 +515,24 @@ onUnmounted(() => { clearInterval(timerId); clearTimeout(numberClickTimer); clea
       </section>
       <aside class="side-panel">
         <section class="control-section"><span class="label">开始一局</span><label class="source-select"><span>题目来源</span><select v-model="sourceChoice" aria-label="选择题目来源" @change="handleSourceChange"><option v-for="option in sourceOptions" :key="option.value" :value="option.value">{{ option.label }}</option></select></label><div class="difficulty-tabs" role="tablist" aria-label="选择难度"><button v-for="(config, key) in DIFFICULTIES" :key="key" :class="{ active: difficulty === key }" type="button" @click="difficulty = key">{{ config.label }}</button></div><button class="primary-button" type="button" @click="beginPuzzle">{{ sourceChoice === 'manual' && manualEditing ? '开始解题' : newPuzzleLabel }} <span>↗</span></button></section>
-        <section class="stats-section"><span class="label">本局信息</span><div class="stat-row"><span>已填数字</span><strong>{{ filledCount }} / 81</strong></div><div class="stat-row"><span>错误</span><strong>{{ mistakes }}</strong></div><div class="stat-row"><span>题目编号</span><strong>{{ puzzleId }}</strong></div><div class="source-note">{{ sourceLabel }}</div></section>
+        <section class="stats-section"><span class="label">本局信息</span><div class="stat-row"><span>已填数字</span><strong>{{ filledCount }} / 81</strong></div><div class="stat-row"><span>错误</span><strong>{{ mistakes }}</strong></div><div class="stat-row"><span>提示</span><strong>{{ hintHistory.length }}</strong></div><div class="stat-row"><span>题目编号</span><strong>{{ puzzleId }}</strong></div><div class="source-note">{{ sourceLabel }}</div></section>
+        <section class="hint-history-section">
+          <details>
+            <summary><span class="label">提示记录</span><strong>{{ hintHistory.length }}</strong></summary>
+            <div v-if="hintHistory.length" class="hint-history-list">
+              <article v-for="item in hintHistory" :key="item.id" class="hint-history-item">
+                <div class="hint-history-head"><strong>#{{ item.number }} {{ item.label }}</strong><span>{{ item.time }}</span></div>
+                <p>{{ item.result }}</p>
+                <small v-if="item.cells">涉及：{{ item.cells }}</small>
+                <details>
+                  <summary>查看内容</summary>
+                  <p>{{ item.message }}</p>
+                </details>
+              </article>
+            </div>
+            <p v-else class="empty-history">还没有使用提示。</p>
+          </details>
+        </section>
       </aside>
     </section>
     <footer class="footer">题目在浏览器本地生成，不上传任何数据。</footer>
