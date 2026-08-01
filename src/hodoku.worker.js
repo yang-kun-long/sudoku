@@ -127,6 +127,15 @@ self.onmessage = async ({ data }) => {
     self.postMessage({ id, result: [...HODOKU_TECHNIQUES], error: null })
     return
   }
+  if (type === 'rating') {
+    try {
+      const rating = await rateSudoku({ puzzle })
+      self.postMessage({ id, result: rating ? { difficulty: rating.difficulty, score: rating.score, bruteForced: rating.bruteForced, givenUp: rating.givenUp, unsolvable: rating.unsolvable } : null, error: null })
+    } catch (error) {
+      self.postMessage({ id, result: null, error: error instanceof Error ? error.message : String(error) })
+    }
+    return
+  }
   try {
     const rating = await rateSudoku({ puzzle, includePath: true })
     const step = rating?.steps?.find((candidate) => candidate.actions?.length)

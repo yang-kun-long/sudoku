@@ -57,3 +57,16 @@ export function getAdvancedTechniqueCatalog() {
     getWorker().postMessage({ id, type: 'catalog' })
   })
 }
+
+export function getAdvancedRating(board) {
+  const id = ++requestId
+  const puzzle = serializePuzzle(board)
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      pending.delete(id)
+      reject(new Error('题目评分超时'))
+    }, 60000)
+    pending.set(id, { resolve, reject, timer })
+    getWorker().postMessage({ id, type: 'rating', puzzle })
+  })
+}

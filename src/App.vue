@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { DATASET_SOURCE, DIFFICULTIES, candidates, decodePuzzle, encodePuzzle, generateHellPuzzle, generatePuzzle, generateSolution, getDatasetPuzzle, pickDatasetPuzzle, ratePuzzle, solve } from './sudoku'
 import { getLogicalHint } from './logicalHint'
-import { getAdvancedHint } from './advancedHint'
+import { getAdvancedHint, getAdvancedRating } from './advancedHint'
 import { findTechniqueGuide } from './techniqueGuides'
 
 const puzzle = ref([])
@@ -25,6 +25,9 @@ const hintLoading = ref(false)
 const difficulty = ref('easy')
 const sourceChoice = ref('mixed')
 const ratingLabel = ref('简单')
+const hodokuScore = ref(null)
+const hodokuDifficulty = ref('')
+const hodokuRatingLoading = ref(false)
 const mistakes = ref(0)
 const seconds = ref(0)
 const status = ref('选择一个格子，然后输入数字。')
@@ -34,8 +37,10 @@ let timerId
 let numberClickTimer
 let numberLongPressTimer
 let numberLongPressTriggered = false
+let ratingRequestId = 0
 
 const difficultyLabel = computed(() => ratingLabel.value || DIFFICULTIES[difficulty.value].label)
+const hodokuRatingText = computed(() => hodokuRatingLoading.value ? '评分中' : hodokuScore.value ? `${hodokuScore.value} · ${hodokuDifficulty.value || '-'}` : '-')
 const newPuzzleLabel = computed(() => difficulty.value === 'hell' ? '生成地狱题目' : sourceChoice.value === 'generated' ? '生成新题目' : '抽取题目')
 const filledCount = computed(() => manualEditing.value ? manualGrid.value.filter(Boolean).length : puzzle.value.flat().filter(Boolean).length + entries.value.filter(Boolean).length)
 const timerText = computed(() => `${String(Math.floor(seconds.value / 60)).padStart(2, '0')}:${String(seconds.value % 60).padStart(2, '0')}`)
@@ -63,6 +68,7 @@ const sourceOptions = [
   { value: 'generated', label: '本地生成' },
   { value: 'manual', label: '手动输入题目' },
 ]
+const hodokuDifficultyNames = { Easy: '简单', Medium: '中等', Hard: '困难', Unfair: '高难', Extreme: '极限' }
 
 function setStatus(message, type = '') { status.value = message; statusType.value = type }
 function cellAt(index) { return { row: Math.floor(index / 9), col: index % 9 } }
@@ -91,10 +97,49 @@ function isNumberInfluenced(index) {
 }
 
 function saveGame() {
-  localStorage.setItem('sudoku-state', JSON.stringify({ puzzle: puzzle.value, solution: solution.value, entries: entries.value, notes: notes.value, manualGrid: manualGrid.value, manualEditing: manualEditing.value, smartCandidatesEnabled: smartCandidatesEnabled.value, lastHintStrategy: lastHintStrategy.value, hintHistory: hintHistory.value, difficulty: difficulty.value, sourceChoice: sourceChoice.value, ratingLabel: ratingLabel.value, mistakes: mistakes.value, seconds: seconds.value, id: puzzleId.value, sourceLabel: sourceLabel.value }))
+  localStorage.setItem('sudoku-state', JSON.stringify({ puzzle: puzzle.value, solution: solution.value, entries: entries.value, notes: notes.value, manualGrid: manualGrid.value, manualEditing: manualEditing.value, smartCandidatesEnabled: smartCandidatesEnabled.value, lastHintStrategy: lastHintStrategy.value, hintHistory: hintHistory.value, difficulty: difficulty.value, sourceChoice: sourceChoice.value, ratingLabel: ratingLabel.value, hodokuScore: hodokuScore.value, hodokuDifficulty: hodokuDifficulty.value, hodokuRatingLoading: hodokuRatingLoading.value, mistakes: mistakes.value, seconds: seconds.value, id: puzzleId.value, sourceLabel: sourceLabel.value }))
 }
 function rememberState() { history.value.push({ entries: entries.value.slice(), notes: notes.value.map((cellNotes) => cellNotes.slice()), smartCandidatesEnabled: smartCandidatesEnabled.value, lastHintStrategy: lastHintStrategy.value }) }
 function startTimer() { clearInterval(timerId); timerId = setInterval(() => { seconds.value += 1 }, 1000) }
+function clearAdvancedRating() {
+  ratingRequestId += 1
+  hodokuScore.value = null
+  hodokuDifficulty.value = ''
+  hodokuRatingLoading.value = false
+}
+function setAdvancedRating(score, difficultyName = '') {
+  hodokuScore.value = Number.isFinite(Number(score)) ? Number(score) : null
+  hodokuDifficulty.value = hodokuDifficultyNames[difficultyName] || difficultyName || ''
+  hodokuRatingLoading.value = false
+}
+async function rateCurrentPuzzle(targetPuzzle = puzzle.value, knownRating = null) {
+  if (knownRating?.score) {
+    setAdvancedRating(knownRating.score, knownRating.difficulty || 'Extreme')
+    return
+  }
+  const requestId = ++ratingRequestId
+  hodokuScore.value = null
+  hodokuDifficulty.value = ''
+  hodokuRatingLoading.value = true
+  try {
+    const rating = await getAdvancedRating(targetPuzzle.flat().map((number) => number || null))
+    if (requestId !== ratingRequestId) return
+    if (!rating || rating.unsolvable) {
+      hodokuScore.value = null
+      hodokuDifficulty.value = rating?.unsolvable ? '无解' : ''
+    } else {
+      setAdvancedRating(rating.score, rating.difficulty)
+    }
+  } catch {
+    if (requestId === ratingRequestId) {
+      hodokuScore.value = null
+      hodokuDifficulty.value = '评分失败'
+      hodokuRatingLoading.value = false
+    }
+  } finally {
+    if (requestId === ratingRequestId) saveGame()
+  }
+}
 function enterManualMode() {
   clearInterval(timerId)
   puzzle.value = []
@@ -110,6 +155,7 @@ function enterManualMode() {
   smartCandidatesEnabled.value = false
   lastHintStrategy.value = ''
   hintHistory.value = []
+  clearAdvancedRating()
   mistakes.value = 0
   seconds.value = 0
   puzzleId.value = '-'
@@ -130,7 +176,7 @@ function newGame() {
     solution.value = fromDataset.solution
     ratingLabel.value = DIFFICULTIES[fromDataset.level].label
     puzzleId.value = fromDataset.id
-    sourceLabel.value = DATASET_SOURCE
+    sourceLabel.value = fromDataset.source === 'nullsudoku' ? 'NullSudoku 题库' : DATASET_SOURCE
   } else if (difficulty.value === 'hell') {
     const hellPuzzle = generateHellPuzzle()
     if (!hellPuzzle) return setStatus('地狱题库还没有合格题，请先运行离线铸题脚本。', 'error')
@@ -138,7 +184,8 @@ function newGame() {
     solution.value = hellPuzzle.solution
     ratingLabel.value = DIFFICULTIES.hell.label
     puzzleId.value = `HELL-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
-    sourceLabel.value = `本地地狱题库：HoDoKu 高分逻辑题，完整路径无搜索${hellPuzzle.score ? `，评分 ${hellPuzzle.score}` : ''}`
+    sourceLabel.value = '本地地狱题库：HoDoKu 高分逻辑题，完整路径无搜索'
+    setAdvancedRating(hellPuzzle.score, 'Extreme')
   } else {
     solution.value = generateSolution()
     puzzle.value = generatePuzzle(solution.value, DIFFICULTIES[difficulty.value].clues)
@@ -155,11 +202,13 @@ function newGame() {
   smartCandidatesEnabled.value = false
   lastHintStrategy.value = ''
   hintHistory.value = []
+  if (difficulty.value !== 'hell') clearAdvancedRating()
   mistakes.value = 0
   seconds.value = 0
   clearLogicalHint()
   setStatus('选择一个格子，然后输入数字。')
   startTimer(); saveGame()
+  if (difficulty.value !== 'hell') rateCurrentPuzzle(puzzle.value)
 }
 function startManualGame() {
   const grid = Array.from({ length: 9 }, (_, row) => manualGrid.value.slice(row * 9, row * 9 + 9))
@@ -177,6 +226,7 @@ function startManualGame() {
   smartCandidatesEnabled.value = false
   lastHintStrategy.value = ''
   hintHistory.value = []
+  clearAdvancedRating()
   mistakes.value = 0
   seconds.value = 0
   clearLogicalHint()
@@ -185,6 +235,7 @@ function startManualGame() {
   sourceLabel.value = '手动输入'
   setStatus('选择一个格子，然后输入数字。')
   startTimer(); saveGame()
+  rateCurrentPuzzle(puzzle.value)
 }
 function beginPuzzle() { if (sourceChoice.value === 'manual' && manualEditing.value) startManualGame(); else newGame() }
 function applySharedPuzzle(sharedPuzzle, sharedSolution, id, source, label, options = {}) {
@@ -199,6 +250,7 @@ function applySharedPuzzle(sharedPuzzle, sharedSolution, id, source, label, opti
   smartCandidatesEnabled.value = false
   lastHintStrategy.value = ''
   hintHistory.value = []
+  clearAdvancedRating()
   mistakes.value = 0
   seconds.value = 0
   clearLogicalHint()
@@ -207,8 +259,10 @@ function applySharedPuzzle(sharedPuzzle, sharedSolution, id, source, label, opti
   sourceChoice.value = source
   if (options.difficulty) difficulty.value = options.difficulty
   ratingLabel.value = options.ratingLabel || ratePuzzle(sharedPuzzle)
+  if (options.hodokuScore) setAdvancedRating(options.hodokuScore, options.hodokuDifficulty || 'Extreme')
   setStatus('已载入分享题目，选择一个格子开始。', 'success')
   startTimer(); saveGame()
+  if (!options.hodokuScore) rateCurrentPuzzle(sharedPuzzle)
 }
 function loadSharedPuzzle() {
   const raw = location.hash.startsWith('#share=') ? decodeURIComponent(location.hash.slice(7)) : ''
@@ -271,7 +325,8 @@ function loadGame() {
     if (!saved?.puzzle || !saved?.solution) return newGame()
     puzzle.value = saved.puzzle; solution.value = saved.solution; entries.value = saved.entries || Array(81).fill(0); notes.value = saved.notes || Array.from({ length: 81 }, () => []); manualGrid.value = saved.manualGrid || Array(81).fill(0); manualEditing.value = saved.manualEditing ?? saved.sourceChoice === 'manual'; smartCandidatesEnabled.value = Boolean(saved.smartCandidatesEnabled); lastHintStrategy.value = saved.lastHintStrategy || ''; hintHistory.value = Array.isArray(saved.hintHistory) ? saved.hintHistory : []
     difficulty.value = saved.difficulty || 'easy'; sourceChoice.value = saved.sourceChoice || 'mixed'; ratingLabel.value = saved.ratingLabel || ratePuzzle(puzzle.value)
-    mistakes.value = saved.mistakes || 0; seconds.value = saved.seconds || 0; puzzleId.value = saved.id || '-'; sourceLabel.value = saved.sourceLabel || '本地生成'; if (manualEditing.value) { clearInterval(timerId); setStatus('请在棋盘中输入题目。') } else startTimer()
+    hodokuScore.value = Number.isFinite(Number(saved.hodokuScore)) ? Number(saved.hodokuScore) : null; hodokuDifficulty.value = saved.hodokuDifficulty || ''; hodokuRatingLoading.value = Boolean(saved.hodokuRatingLoading)
+    mistakes.value = saved.mistakes || 0; seconds.value = saved.seconds || 0; puzzleId.value = saved.id || '-'; sourceLabel.value = saved.sourceLabel || '本地生成'; if (manualEditing.value) { clearInterval(timerId); setStatus('请在棋盘中输入题目。') } else { startTimer(); if (hodokuRatingLoading.value || !hodokuScore.value) rateCurrentPuzzle(puzzle.value) }
   } catch { newGame() }
 }
 function enterManualNumber(number) {
@@ -515,7 +570,7 @@ onUnmounted(() => { clearInterval(timerId); clearTimeout(numberClickTimer); clea
       </section>
       <aside class="side-panel">
         <section class="control-section"><span class="label">开始一局</span><label class="source-select"><span>题目来源</span><select v-model="sourceChoice" aria-label="选择题目来源" @change="handleSourceChange"><option v-for="option in sourceOptions" :key="option.value" :value="option.value">{{ option.label }}</option></select></label><div class="difficulty-tabs" role="tablist" aria-label="选择难度"><button v-for="(config, key) in DIFFICULTIES" :key="key" :class="{ active: difficulty === key }" type="button" @click="difficulty = key">{{ config.label }}</button></div><button class="primary-button" type="button" @click="beginPuzzle">{{ sourceChoice === 'manual' && manualEditing ? '开始解题' : newPuzzleLabel }} <span>↗</span></button></section>
-        <section class="stats-section"><span class="label">本局信息</span><div class="stat-row"><span>已填数字</span><strong>{{ filledCount }} / 81</strong></div><div class="stat-row"><span>错误</span><strong>{{ mistakes }}</strong></div><div class="stat-row"><span>提示</span><strong>{{ hintHistory.length }}</strong></div><div class="stat-row"><span>题目编号</span><strong>{{ puzzleId }}</strong></div><div class="source-note">{{ sourceLabel }}</div></section>
+        <section class="stats-section"><span class="label">本局信息</span><div class="stat-row"><span>已填数字</span><strong>{{ filledCount }} / 81</strong></div><div class="stat-row"><span>错误</span><strong>{{ mistakes }}</strong></div><div class="stat-row"><span>提示</span><strong>{{ hintHistory.length }}</strong></div><div class="stat-row"><span>HoDoKu评分</span><strong>{{ hodokuRatingText }}</strong></div><div class="stat-row"><span>题目编号</span><strong>{{ puzzleId }}</strong></div><div class="source-note">{{ sourceLabel }}</div></section>
         <section class="hint-history-section">
           <details>
             <summary><span class="label">提示记录</span><strong>{{ hintHistory.length }}</strong></summary>
