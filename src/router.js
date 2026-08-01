@@ -4,6 +4,7 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', name: 'game', component: () => import('./App.vue') },
+    { path: '/manual', name: 'manual', component: () => import('./views/ManualView.vue') },
     { path: '/techniques', name: 'techniques', component: () => import('./views/TechniquesView.vue') },
     { path: '/techniques/:id', name: 'technique-guide', component: () => import('./views/TechniqueGuideView.vue') },
   ],
