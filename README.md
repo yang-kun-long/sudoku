@@ -6,7 +6,7 @@
 
 ## 运行
 
-安装依赖后运行 `npm run dev`，也可以运行 `npm run build` 构建静态文件。离线筛选人类可解地狱题可运行 `npm run hell:generate -- --attempts 300 --target-additions 5 --source opening-search`，本地并发筛选可运行 `npm run hell:generate:parallel -- --attempts 2000 --target-additions 20 --workers 4 --source opening-search`。
+安装依赖后运行 `npm run dev`，也可以运行 `npm run build` 构建静态文件。离线筛选人类可解地狱题可运行 `npm run hell:generate -- --attempts 300 --target-additions 5 --source hodoku --min-score 1800`，本地并发筛选可运行 `npm run hell:generate:parallel -- --attempts 2000 --target-additions 20 --workers 4 --source hodoku --min-score 1800`。
 
 ## 特性
 
@@ -15,7 +15,7 @@
 - 支持手动录入数独题目，并在唯一解校验通过后开始解题
 - 内置两个 GitHub 开源题库：344 道真人难度数据，以及约 2 万道 Public Domain 分档题目
 - 随机生成完整解并挖空，保证唯一解
-- 地狱难度只从离线 verified 题库抽取，完整路径禁止 Brute Force / Give Up / Incomplete Solution
+- 地狱难度只从离线 verified 题库抽取，要求 HoDoKu Extreme 高分，并且完整路径禁止 Brute Force / Give Up / Incomplete Solution
 - 浏览器本地保存进度、计时和主题
 - 数字键盘、键盘输入、提示、撤销、答案检查
 - 内置常用逻辑提示，并通过 HoDoKu Core Worker 按需分析 111 个高级技巧、强制链和搜索步骤

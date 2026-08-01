@@ -216,6 +216,8 @@ export function generateHellPuzzle() {
     puzzle,
     solution,
     opening: seed.opening,
+    advancedStepIndex: seed.advancedStepIndex,
+    score: seed.score,
     seedId: seed.id,
   }
 }

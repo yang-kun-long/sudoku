@@ -93,10 +93,10 @@ Exocet 技巧动画显示三条交叉线（第 3、6、8 列）、伴随格 `r7c
 - `src/App.vue`：主棋盘、输入交互、候选、分享、保存和提示编排
 - `src/sudoku.js`：生成、求解、唯一解、难度和分享编解码
 - `src/sudoku.js`：生成、求解、唯一解、难度和分享编解码；地狱难度使用 verified 题库做数字/行列/宫带等价变换
-- `src/data/hell/verified.json`：离线审题通过的人类可解地狱题库；当前为空，不能放入含 Brute Force / Give Up / Incomplete Solution 的题
-- `scripts/generateHellPool.mjs`：离线铸题脚本，默认使用 `--source opening-search` 生成候选：随机完整解 + 唯一题挖洞 + clue swap 局部搜索，先优化开局低级技巧冻结，再用 HoDoKu 验证完整路径，合格后追加 JSON；仍可用 `--source hodoku` 回退到 HoDoKu 自带生成
+- `src/data/hell/verified.json`：离线审题通过的人类可解地狱题库；当前标准为 HoDoKu Extreme、高分（默认 `minScore=1800`）、完整路径无 Brute Force / Give Up / Incomplete Solution
+- `scripts/generateHellPool.mjs`：离线铸题脚本，默认使用 `--source hodoku --min-score 1800` 生成候选：HoDoKu 生成 Extreme 候选，再验证完整路径无搜索和评分门槛；可用 `opening-search`、`opening-build`、`de-single` 做更激进的开局冻结实验
 - 另有实验候选源 `--source de-single`：从 HoDoKu 题出发做 targeted clue 删除/交换以消除开局 Single；当前较慢，20 次约 10 分钟且未命中，暂不作为 CI 默认源
-- `scripts/generateHellPoolParallel.mjs`：本地并发铸题工具，启动多个 Node 子进程分片搜索，合并时去重并重新编号；推荐本地命令 `npm run hell:generate:parallel -- --attempts 2000 --target-additions 20 --workers 4 --source opening-search`
+- `scripts/generateHellPoolParallel.mjs`：本地并发铸题工具，启动多个 Node 子进程分片搜索，合并时去重并重新编号；推荐本地命令 `npm run hell:generate:parallel -- --attempts 2000 --target-additions 20 --workers 4 --source hodoku --min-score 1800`
 - `.github/workflows/generate-hell-pool.yml`：定时/手动铸题 workflow；公开仓库策略为每周二/周五各一次、1000 次候选、最多追加 10 题、脚本 50 分钟主动收尾、job 60 分钟硬超时，只有题库变化时才提交，避免空部署
 - `src/logicalHint.js`：同步逻辑提示规则
 - `src/logicalHint.test.js`：14 条逻辑回归测试

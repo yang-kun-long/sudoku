@@ -44,10 +44,11 @@ function parseArgs() {
     targetAdditions: 5,
     difficulty: 'Extreme',
     output: defaultOutput,
-    minScore: undefined,
+    minScore: 1800,
     maxScore: undefined,
     maxRuntimeMinutes: 50,
-    source: 'opening-freeze',
+    source: 'hodoku',
+    advancedWindow: 5,
     minClues: 24,
     maxClues: 30,
     searchSteps: 160,
@@ -64,12 +65,13 @@ function parseArgs() {
     else if (arg === '--max-score') options.maxScore = Number(readValue())
     else if (arg === '--max-runtime-minutes') options.maxRuntimeMinutes = Number(readValue())
     else if (arg === '--source') options.source = readValue()
+    else if (arg === '--advanced-window') options.advancedWindow = Number(readValue())
     else if (arg === '--min-clues') options.minClues = Number(readValue())
     else if (arg === '--max-clues') options.maxClues = Number(readValue())
     else if (arg === '--search-steps') options.searchSteps = Number(readValue())
     else if (arg === '--build-min-score') options.buildMinScore = Number(readValue())
     else if (arg === '--help') {
-      console.log('Usage: node scripts/generateHellPool.mjs [--attempts 500] [--target-additions 10] [--difficulty Extreme] [--source hodoku|de-single|opening-freeze|opening-search|opening-build] [--min-clues 24] [--max-clues 30] [--search-steps 160] [--build-min-score 10] [--max-runtime-minutes 50]')
+      console.log('Usage: node scripts/generateHellPool.mjs [--attempts 500] [--target-additions 10] [--difficulty Extreme] [--source hodoku|de-single|opening-freeze|opening-search|opening-build] [--min-score 1800] [--min-clues 24] [--max-clues 30] [--search-steps 160] [--build-min-score 10] [--max-runtime-minutes 50]')
       process.exit(0)
     }
   }
@@ -81,11 +83,12 @@ function emptyPool() {
     version: 1,
     generatedAt: null,
     criteria: {
-      openingAdvancedDepth: 1,
+      openingAdvancedDepth: null,
       allowBruteForce: false,
       allowGiveUp: false,
       allowIncomplete: false,
-      notes: 'Puzzles must have a human-solvable HoDoKu path and an advanced opening gate.',
+      minScore: 1800,
+      notes: 'Puzzles must be high-scoring HoDoKu Extreme puzzles with a complete human-solvable path and no Brute Force, Give Up, or Incomplete Solution steps.',
     },
     puzzles: [],
   }
@@ -393,7 +396,7 @@ function hasBadPath(rating) {
   )
 }
 
-function isHodokuAdvancedOpening(technique = '') {
+function isHodokuAdvancedTechnique(technique = '') {
   return HODOKU_ADVANCED_OPENERS.some((prefix) => technique.includes(prefix))
 }
 
@@ -412,22 +415,25 @@ async function generateCandidate(options, generatedOptions) {
   return generateOpeningFreezeCandidate(options)
 }
 
-async function validatePuzzle(puzzle, generated = null) {
+async function validatePuzzle(puzzle, generated = null, options = {}) {
   const rating = await rateSudoku({ puzzle, includePath: true, includeSolution: true })
   if (!rating || hasBadPath(rating)) {
     return { ok: false, reason: 'path-needs-search' }
   }
-
-  const localOpening = getLogicalHint(boardFromPuzzle(puzzle))
-  const pathOpening = firstActionStep(rating.steps)
-  const localOpeningIsAdvanced = LOCAL_ADVANCED_OPENERS.has(localOpening?.strategy)
-  const pathOpeningIsAdvanced = isHodokuAdvancedOpening(pathOpening?.technique)
-
-  if (!localOpeningIsAdvanced && !pathOpeningIsAdvanced) {
-    return { ok: false, reason: `opening-${localOpening?.strategy || pathOpening?.technique || 'none'}` }
+  if (options.difficulty && rating.difficulty !== options.difficulty) {
+    return { ok: false, reason: `difficulty-${rating.difficulty}` }
+  }
+  if (Number.isFinite(options.minScore) && rating.score < options.minScore) {
+    return { ok: false, reason: `score-${rating.score}` }
+  }
+  if (Number.isFinite(options.maxScore) && rating.score > options.maxScore) {
+    return { ok: false, reason: `score-${rating.score}` }
   }
 
-  const opening = localOpeningIsAdvanced ? localOpening.strategy : pathOpening.technique
+  const localOpening = getLogicalHint(boardFromPuzzle(puzzle))
+  const actionSteps = (rating.steps || []).filter((step) => step.actions?.length)
+  const firstAdvancedIndex = actionSteps.findIndex((step) => isHodokuAdvancedTechnique(step.technique))
+  const opening = firstAdvancedIndex >= 0 ? actionSteps[firstAdvancedIndex].technique : actionSteps[0]?.technique || localOpening?.strategy || 'Logical Path'
   const techniques = [...new Set((rating.steps || []).map((step) => step.technique))]
   return {
     ok: true,
@@ -438,6 +444,9 @@ async function validatePuzzle(puzzle, generated = null) {
       difficulty: rating.difficulty,
       score: rating.score,
       pathLength: rating.steps?.length || 0,
+      firstStep: actionSteps[0]?.technique || null,
+      openingLocal: localOpening?.strategy || null,
+      advancedStepIndex: firstAdvancedIndex >= 0 ? firstAdvancedIndex + 1 : null,
       techniques,
       bruteForced: false,
       givenUp: false,
@@ -485,7 +494,7 @@ async function main() {
     }
     if (!generated.puzzle || seen.has(generated.puzzle)) continue
 
-    const result = await validatePuzzle(generated.puzzle, generated)
+    const result = await validatePuzzle(generated.puzzle, generated, options)
     if (!result.ok) {
       if (attempt % 25 === 0) console.log(`attempt ${attempt}/${options.attempts}: ${result.reason}`)
       continue

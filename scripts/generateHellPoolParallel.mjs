@@ -20,12 +20,13 @@ function parseArgs() {
     difficulty: 'Extreme',
     output: defaultOutput,
     maxRuntimeMinutes: 0,
-    source: 'opening-search',
+    source: 'hodoku',
+    advancedWindow: 5,
     minClues: 24,
     maxClues: 30,
     searchSteps: 160,
     buildMinScore: 10,
-    minScore: undefined,
+    minScore: 1800,
     maxScore: undefined,
     tempDir: defaultTempDir,
   }
@@ -39,6 +40,7 @@ function parseArgs() {
     else if (arg === '--output') options.output = path.resolve(projectRoot, readValue())
     else if (arg === '--max-runtime-minutes') options.maxRuntimeMinutes = Number(readValue())
     else if (arg === '--source') options.source = readValue()
+    else if (arg === '--advanced-window') options.advancedWindow = Number(readValue())
     else if (arg === '--min-clues') options.minClues = Number(readValue())
     else if (arg === '--max-clues') options.maxClues = Number(readValue())
     else if (arg === '--search-steps') options.searchSteps = Number(readValue())
@@ -47,7 +49,7 @@ function parseArgs() {
     else if (arg === '--max-score') options.maxScore = Number(readValue())
     else if (arg === '--temp-dir') options.tempDir = path.resolve(projectRoot, readValue())
     else if (arg === '--help') {
-      console.log('Usage: node scripts/generateHellPoolParallel.mjs [--attempts 2000] [--target-additions 20] [--workers 4] [--difficulty Extreme] [--source hodoku|de-single|opening-freeze|opening-search|opening-build] [--min-clues 24] [--max-clues 30] [--search-steps 160] [--build-min-score 10] [--max-runtime-minutes 0]')
+      console.log('Usage: node scripts/generateHellPoolParallel.mjs [--attempts 2000] [--target-additions 20] [--workers 4] [--difficulty Extreme] [--source hodoku|de-single|opening-freeze|opening-search|opening-build] [--advanced-window 5] [--min-clues 24] [--max-clues 30] [--search-steps 160] [--build-min-score 10] [--max-runtime-minutes 0]')
       process.exit(0)
     }
   }
@@ -62,11 +64,12 @@ function emptyPool() {
     version: 1,
     generatedAt: null,
     criteria: {
-      openingAdvancedDepth: 1,
+      openingAdvancedDepth: null,
       allowBruteForce: false,
       allowGiveUp: false,
       allowIncomplete: false,
-      notes: 'Puzzles must have a human-solvable HoDoKu path and an advanced opening gate.',
+      minScore: 1800,
+      notes: 'Puzzles must be high-scoring HoDoKu Extreme puzzles with a complete human-solvable path and no Brute Force, Give Up, or Incomplete Solution steps.',
     },
     puzzles: [],
   }
@@ -98,6 +101,7 @@ function runWorker(workerIndex, options, workerAttempts, workerTarget, outputPat
     '--target-additions', String(workerTarget),
     '--difficulty', options.difficulty,
     '--source', options.source,
+    '--advanced-window', String(options.advancedWindow),
     '--min-clues', String(options.minClues),
     '--max-clues', String(options.maxClues),
     '--search-steps', String(options.searchSteps),

@@ -38,10 +38,8 @@ jobs:
           --attempts "${{ inputs.attempts || '1000' }}"
           --target-additions "${{ inputs.target_additions || '10' }}"
           --difficulty Extreme
-          --source opening-search
-          --min-clues 24
-          --max-clues 30
-          --search-steps 160
+          --source hodoku
+          --min-score 1800
           --max-runtime-minutes 50
 
       - name: Test and build

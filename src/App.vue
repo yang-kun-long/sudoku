@@ -118,7 +118,7 @@ function newGame() {
     solution.value = hellPuzzle.solution
     ratingLabel.value = DIFFICULTIES.hell.label
     puzzleId.value = `HELL-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
-    sourceLabel.value = `本地地狱题库：首步需要 ${hellPuzzle.opening} 打开局面`
+    sourceLabel.value = `本地地狱题库：HoDoKu 高分逻辑题，完整路径无搜索${hellPuzzle.score ? `，评分 ${hellPuzzle.score}` : ''}`
   } else {
     solution.value = generateSolution()
     puzzle.value = generatePuzzle(solution.value, DIFFICULTIES[difficulty.value].clues)
@@ -209,7 +209,7 @@ function loadSharedPuzzle() {
     if (!sharedPuzzle) return false
     const result = solve(sharedPuzzle.map((row) => row.slice()), 2)
     if (result.count !== 1 || !result.solution) return false
-    applySharedPuzzle(sharedPuzzle, result.solution, 'HELL-SHARED', 'generated', '分享地狱题目：来自 verified 地狱题库', { difficulty: 'hell', ratingLabel: DIFFICULTIES.hell.label })
+    applySharedPuzzle(sharedPuzzle, result.solution, 'HELL-SHARED', 'generated', '分享地狱题目：HoDoKu 高分逻辑题，完整路径无搜索', { difficulty: 'hell', ratingLabel: DIFFICULTIES.hell.label })
     return true
   }
   return false
