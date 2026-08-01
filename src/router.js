@@ -5,6 +5,7 @@ const router = createRouter({
   routes: [
     { path: '/', name: 'game', component: () => import('./App.vue') },
     { path: '/techniques', name: 'techniques', component: () => import('./views/TechniquesView.vue') },
+    { path: '/techniques/:id', name: 'technique-guide', component: () => import('./views/TechniqueGuideView.vue') },
   ],
   scrollBehavior: () => ({ top: 0 }),
 })

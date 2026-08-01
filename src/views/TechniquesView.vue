@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { getAdvancedTechniqueCatalog } from '../advancedHint'
+import { findTechniqueGuide, techniqueGuidePath } from '../techniqueGuides'
 
 const techniques = [
   {
@@ -295,9 +296,13 @@ const isDark = ref(localStorage.getItem('sudoku-theme') === 'dark')
 const advancedStrategies = ref([])
 const strategyQuery = ref('')
 const activeTechnique = computed(() => techniques.find((technique) => technique.id === activeId.value) || techniques[0])
+const activeGuide = computed(() => findTechniqueGuide(activeTechnique.value.id))
 const exampleCells = computed(() => new Map(activeTechnique.value.cells.map((cell) => [cell.index, cell])))
 const hasEliminations = computed(() => activeTechnique.value.cells.some((cell) => cell.eliminate?.length))
 const hasPatternCells = computed(() => activeTechnique.value.cells.some((cell) => ['premise', 'wing', 'base'].includes(cell.role)))
+const animatedTechniqueGroups = computed(() => ['初级', '中级', '高级', '专家']
+  .map((level) => ({ level, techniques: techniques.filter((technique) => technique.level === level) }))
+  .filter((group) => group.techniques.length))
 const strategyFamilies = [
   { id: 'foundation', label: '基础与候选组合' },
   { id: 'wing', label: '翼、矩形与染色' },
@@ -325,6 +330,7 @@ function selectTechnique(id) {
   paused.value = false
   animationVersion.value += 1
 }
+function strategyPath(strategy) { return techniqueGuidePath(strategy) }
 function demoCell(index) { return exampleCells.value.get(index) }
 function candidateClass(index, number) {
   const cell = demoCell(index)
@@ -350,6 +356,8 @@ function toggleTheme() {
 watch(isDark, (value) => { document.body.classList.toggle('dark-page', value) }, { immediate: true })
 onMounted(async () => {
   document.title = '数独技巧图解 · Sudoku Lab'
+  const hashId = window.location.hash.replace('#', '')
+  if (techniques.some((technique) => technique.id === hashId)) selectTechnique(hashId)
   try { advancedStrategies.value = await getAdvancedTechniqueCatalog() } catch { advancedStrategies.value = [] }
 })
 onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
@@ -368,9 +376,14 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
       </div>
     </header>
 
-    <nav class="technique-tabs" role="tablist" aria-label="选择数独技巧">
-      <button v-for="technique in techniques" :key="technique.id" type="button" role="tab" :aria-selected="activeId === technique.id" :class="{ active: activeId === technique.id }" @click="selectTechnique(technique.id)">{{ technique.label }}</button>
-    </nav>
+    <section class="technique-picker" aria-label="选择数独技巧">
+      <div v-for="group in animatedTechniqueGroups" :key="group.level" class="technique-group">
+        <span>{{ group.level }}</span>
+        <div role="tablist" :aria-label="`${group.level}技巧`">
+          <button v-for="technique in group.techniques" :key="technique.id" type="button" role="tab" :aria-selected="activeId === technique.id" :class="{ active: activeId === technique.id }" @click="selectTechnique(technique.id)">{{ technique.label }}</button>
+        </div>
+      </div>
+    </section>
 
     <section class="technique-stage">
       <figure class="demo-area">
@@ -411,6 +424,7 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
         <ol>
           <li v-for="step in activeTechnique.steps" :key="step">{{ step }}</li>
         </ol>
+        <RouterLink v-if="activeGuide" class="tutorial-link" :to="`/techniques/${activeGuide.id}`">阅读新手教程</RouterLink>
         <dl v-if="activeTechnique.terms?.length" class="term-list">
           <div v-for="term in activeTechnique.terms" :key="term.name">
             <dt>{{ term.name }}</dt>
@@ -435,7 +449,12 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
       <div class="strategy-groups">
         <details v-for="group in strategyGroups" :key="group.id" :open="Boolean(strategyQuery)">
           <summary>{{ group.label }} <span>{{ group.strategies.length }}</span></summary>
-          <div class="strategy-tags"><span v-for="strategy in group.strategies" :key="strategy">{{ strategy }}</span></div>
+          <div class="strategy-tags">
+            <template v-for="strategy in group.strategies" :key="strategy">
+              <RouterLink v-if="strategyPath(strategy)" :to="strategyPath(strategy)">{{ strategy }}</RouterLink>
+              <span v-else>{{ strategy }}</span>
+            </template>
+          </div>
         </details>
       </div>
     </section>
@@ -450,9 +469,12 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 .techniques-header h1 { font-size:clamp(28px,4vw,38px); }
 .techniques-actions { display:flex; align-items:center; gap:10px; }
 .back-link { min-height:40px; display:flex; align-items:center; padding:0 12px; border:1px solid var(--line); border-radius:7px; background:var(--surface); color:var(--ink); text-decoration:none; font-size:13px; font-weight:700; }
-.technique-tabs { display:flex; gap:6px; overflow-x:auto; padding:0 0 10px; scrollbar-width:thin; }
-.technique-tabs button { flex:0 0 auto; min-height:38px; padding:0 16px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--muted); font-weight:700; }
-.technique-tabs button.active { border-color:var(--accent); background:var(--accent); color:#fff; }
+.technique-picker { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:20px; }
+.technique-group { min-width:0; padding:12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); }
+.technique-group > span { display:block; margin-bottom:8px; color:var(--accent); font-size:11px; font-weight:850; }
+.technique-group > div { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+.technique-group button { min-width:0; min-height:34px; padding:0 8px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--muted); font-size:12px; font-weight:750; white-space:normal; }
+.technique-group button.active { border-color:var(--accent); background:var(--accent); color:#fff; }
 .technique-stage { display:grid; grid-template-columns:minmax(320px,560px) minmax(260px,1fr); gap:clamp(26px,5vw,58px); align-items:center; padding:24px 0 34px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
 .demo-area { margin:0; min-width:0; }
 .demo-toolbar { display:flex; justify-content:space-between; align-items:center; min-height:34px; margin-bottom:10px; color:var(--muted); font-size:11px; font-weight:800; }
@@ -503,6 +525,7 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 .rule-line strong { display:block; margin-bottom:4px; color:var(--accent); font-size:11px; }
 .technique-copy ol { margin:18px 0 0; padding-left:22px; color:var(--muted); font-size:13px; line-height:1.8; }
 .technique-copy li { padding-left:4px; }
+.tutorial-link { min-height:36px; display:inline-flex; align-items:center; margin-top:18px; padding:0 11px; border:1px solid var(--line); border-radius:6px; color:var(--accent); text-decoration:none; font-size:13px; font-weight:800; }
 .term-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 18px; margin:20px 0 0; padding-top:4px; border-top:1px solid var(--line); }
 .term-list div { padding:11px 0; border-bottom:1px solid var(--line); }
 .term-list dt { color:var(--accent); font-size:12px; font-weight:800; }
@@ -521,7 +544,8 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 .strategy-groups details[open] summary::before { content:'−'; }
 .strategy-groups summary span { margin-left:auto; color:var(--muted); font-size:11px; }
 .strategy-tags { display:flex; flex-wrap:wrap; gap:6px; padding:0 0 16px 28px; }
-.strategy-tags span { padding:5px 8px; border:1px solid var(--line); border-radius:4px; background:var(--surface); color:var(--muted); font-size:11px; line-height:1.3; }
+.strategy-tags span,.strategy-tags a { padding:5px 8px; border:1px solid var(--line); border-radius:4px; background:var(--surface); color:var(--muted); font-size:11px; line-height:1.3; text-decoration:none; }
+.strategy-tags a { color:var(--accent); }
 .techniques-footer { padding-top:20px; text-align:center; font-size:12px; }
 .techniques-footer a { color:var(--accent); }
 .dark .demo-cell.premise,.dark .demo-cell.wing,.dark .demo-cell.base { background:#344e5c; }
@@ -538,7 +562,8 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 @keyframes exocet-target { 0%,56%,100% { background:var(--surface); } 66%,88% { background:rgba(185,74,66,.1); } }
 @keyframes exocet-key { 0%,8%,100% { transform:scale(1); } 14%,23% { transform:scale(1.25); } }
 @keyframes exocet-remove { 0%,67%,100% { opacity:1; transform:scale(1); text-decoration:none; } 76%,90% { opacity:.12; transform:scale(.55); text-decoration:line-through; } }
+@media (max-width:900px) { .technique-picker { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:760px) { .techniques-shell { padding-top:22px; } .technique-stage { grid-template-columns:1fr; align-items:start; } .demo-board { margin:0 auto; } .technique-copy { max-width:640px; } }
-@media (max-width:460px) { .techniques-shell { width:min(100% - 18px,1080px); } .techniques-header { gap:8px; } .techniques-header .eyebrow { display:none; } .techniques-header h1 { font-size:23px; } .back-link { width:34px; min-height:32px; overflow:hidden; white-space:nowrap; padding:0 9px; color:transparent; font-size:0; } .back-link::before { content:'←'; color:var(--ink); font-size:18px; } .techniques-actions { gap:5px; } .technique-tabs button { min-height:36px; padding:0 13px; font-size:12px; } .technique-stage { padding-top:16px; gap:24px; } .demo-toolbar { margin-bottom:7px; } .technique-copy h2 { font-size:21px; } .term-list { grid-template-columns:1fr; } .library-heading { align-items:stretch; flex-direction:column; gap:16px; } .strategy-search { width:100%; } .strategy-tags { padding-left:0; } }
+@media (max-width:460px) { .techniques-shell { width:min(100% - 18px,1080px); } .techniques-header { gap:8px; } .techniques-header .eyebrow { display:none; } .techniques-header h1 { font-size:23px; } .back-link { width:34px; min-height:32px; overflow:hidden; white-space:nowrap; padding:0 9px; color:transparent; font-size:0; } .back-link::before { content:'←'; color:var(--ink); font-size:18px; } .techniques-actions { gap:5px; } .technique-picker { grid-template-columns:1fr; gap:8px; margin-bottom:16px; } .technique-group { padding:10px; } .technique-group > div { grid-template-columns:repeat(3,minmax(0,1fr)); } .technique-group button { min-height:34px; padding:0 5px; font-size:12px; } .technique-stage { padding-top:16px; gap:24px; } .demo-toolbar { margin-bottom:7px; } .technique-copy h2 { font-size:21px; } .term-list { grid-template-columns:1fr; } .library-heading { align-items:stretch; flex-direction:column; gap:16px; } .strategy-search { width:100%; } .strategy-tags { padding-left:0; } }
 @media (prefers-reduced-motion:reduce) { .demo-board * { animation:none !important; } .pattern-guide { opacity:1; transform:none; } }
 </style>

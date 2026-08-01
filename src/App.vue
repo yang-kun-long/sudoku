@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { DATASET_SOURCE, DIFFICULTIES, candidates, decodePuzzle, encodePuzzle, generateHellPuzzle, generatePuzzle, generateSolution, getDatasetPuzzle, pickDatasetPuzzle, ratePuzzle, solve } from './sudoku'
 import { getLogicalHint } from './logicalHint'
 import { getAdvancedHint } from './advancedHint'
+import { findTechniqueGuide } from './techniqueGuides'
 
 const puzzle = ref([])
 const solution = ref([])
@@ -36,6 +37,7 @@ const difficultyLabel = computed(() => ratingLabel.value || DIFFICULTIES[difficu
 const newPuzzleLabel = computed(() => difficulty.value === 'hell' ? '生成地狱题目' : sourceChoice.value === 'generated' ? '生成新题目' : '抽取题目')
 const filledCount = computed(() => manualEditing.value ? manualGrid.value.filter(Boolean).length : puzzle.value.flat().filter(Boolean).length + entries.value.filter(Boolean).length)
 const timerText = computed(() => `${String(Math.floor(seconds.value / 60)).padStart(2, '0')}:${String(seconds.value % 60).padStart(2, '0')}`)
+const hintGuide = computed(() => findTechniqueGuide(lastHintStrategy.value))
 const puzzleId = ref('-')
 const sourceLabel = ref('本地生成')
 const sourceOptions = [
@@ -362,6 +364,7 @@ async function giveHint() {
   if (manualEditing.value) return setStatus('开始解题后才能使用提示。', 'error')
   const hasWrongEntry = entries.value.some((number, index) => number && number !== solution.value[cellAt(index).row][cellAt(index).col])
   if (hasWrongEntry) return setStatus('盘面中有错误数字，请先修正红色格子。', 'error')
+  lastHintStrategy.value = ''
   const currentGrid = Array.from({ length: 9 }, (_, row) => Array.from({ length: 9 }, (_, col) => puzzle.value[row][col] || entries.value[row * 9 + col] || 0))
   const logicalBoard = currentGrid.flat().map((number) => number || null)
   const hasCompleteCandidateNotes = logicalBoard.every((number, index) => number || notes.value[index].length)
@@ -434,7 +437,13 @@ onUnmounted(() => { clearInterval(timerId); clearTimeout(numberClickTimer); clea
           <template v-else><button v-for="index in 81" :key="index" class="cell" :class="{ given: isGiven(index - 1), editable: !isGiven(index - 1), selected: selected === index - 1, related: isRelated(index - 1) && selected !== index - 1, conflict: isConflict(index - 1), 'number-influence': isNumberInfluenced(index - 1), 'number-focus': isFocusedNumber(index - 1), 'hint-target': hintCells.includes(index - 1) }" type="button" role="gridcell" @click="selectCell(index - 1)" @dblclick.stop="focusCellNumber(index - 1)"><span class="cell-value">{{ cellValue(index - 1) }}</span><span v-if="!cellValue(index - 1)" class="notes"><span v-for="note in 9" :key="note" :class="{ visible: cellNotes(index - 1).includes(note) }">{{ note }}</span></span></button></template>
         </div>
         <p class="status" :class="statusType" role="status">{{ status }}</p>
-        <div v-if="hintMessage" class="hint-panel"><strong>解题思路</strong><span>{{ hintMessage }}</span></div>
+        <div v-if="hintMessage" class="hint-panel">
+          <strong>解题思路</strong>
+          <div class="hint-copy">
+            <RouterLink v-if="hintGuide" class="hint-method-link" :to="`/techniques/${hintGuide.id}`">本次方法：{{ hintGuide.label }}</RouterLink>
+            <span>{{ hintMessage }}</span>
+          </div>
+        </div>
         <div class="number-pad" aria-label="数字键盘"><button v-for="number in 9" :key="number" type="button" @pointerdown="startNumberLongPress(number, $event)" @pointerup="finishNumberPress(number)" @pointercancel="cancelNumberLongPress" @pointerleave="cancelNumberLongPress" @contextmenu.prevent @click="handleNumberButtonClick(number, $event)" @dblclick.prevent="handleNumberDoubleClick(number)"><span class="number-label">{{ number }}</span><span class="number-count">{{ digitCount(number) }}/9</span></button><button class="erase" type="button" @click="enterNumber(0)">清除</button></div>
       </section>
       <aside class="side-panel">
