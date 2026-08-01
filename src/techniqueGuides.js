@@ -291,6 +291,7 @@ export const techniqueGuides = [
     title: '链与 AIC：把“如果不是它就必须是它”连起来',
     level: '专家',
     category: 'chain',
+    animated: true,
     aliases: ['X-Chain', 'XY-Chain', 'Remote Pair', 'Nice Loop/AIC', 'Continuous Nice Loop', 'Discontinuous Nice Loop', 'Grouped Nice Loop/AIC', 'Grouped Continuous Nice Loop', 'Grouped Discontinuous Nice Loop', 'AIC', 'Grouped AIC'],
     summary: '链技巧把强关系和弱关系交替连接，用端点关系推出填数或删候选。',
     rule: '如果链的两个端点能证明至少一个为真，就删除同时看到端点的候选；环还能产生更多删除。',
@@ -449,4 +450,3 @@ export function techniqueGuidePath(strategy) {
   const guide = findTechniqueGuide(strategy)
   return guide ? `/techniques/${guide.id}` : ''
 }
-

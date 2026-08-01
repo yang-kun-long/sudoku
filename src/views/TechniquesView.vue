@@ -434,8 +434,8 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
           <span v-for="guide in activeTechnique.guides || []" :key="`${guide.axis}-${guide.index}`" class="pattern-guide" :class="guide.axis" :style="guideStyle(guide)" :title="guide.label"></span>
           <svg v-if="demoLinks.length" class="demo-chain-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             <defs>
-              <marker id="demo-chain-arrow-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
-                <path d="M0,0 L6,3 L0,6 Z"></path>
+              <marker id="demo-chain-arrow-head" markerWidth="4" markerHeight="4" refX="3.4" refY="2" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L4,2 L0,4 Z"></path>
               </marker>
             </defs>
             <line v-for="(link, linkIndex) in demoLinks" :key="`${link.from}-${link.to}-${linkIndex}`" :class="['demo-chain-arrow', link.relation]" :style="{ '--delay': `${linkIndex * 0.35}s` }" :x1="cellPoint(link.from).x" :y1="cellPoint(link.from).y" :x2="cellPoint(link.to).x" :y2="cellPoint(link.to).y"></line>
@@ -539,7 +539,7 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 .pattern-guide { position:absolute; inset-block:0; z-index:3; pointer-events:none; border-left:2px dashed rgba(37,98,149,.8); border-right:2px dashed rgba(37,98,149,.8); background:rgba(37,98,149,.07); opacity:0; }
 .pattern-guide.row { inset-inline:0; border:0; border-top:2px dashed rgba(37,98,149,.8); border-bottom:2px dashed rgba(37,98,149,.8); }
 .demo-chain-overlay { position:absolute; inset:0; z-index:4; pointer-events:none; overflow:visible; }
-.demo-chain-arrow { stroke:#256295; stroke-width:.72; stroke-linecap:round; marker-end:url(#demo-chain-arrow-head); filter:drop-shadow(0 1px 1px rgba(255,255,255,.78)); animation:demo-chain-flow 4.8s ease-in-out infinite; animation-delay:var(--delay); }
+.demo-chain-arrow { stroke:#256295; stroke-width:.48; stroke-linecap:round; marker-end:url(#demo-chain-arrow-head); filter:drop-shadow(0 1px 1px rgba(255,255,255,.78)); animation:demo-chain-flow 4.8s ease-in-out infinite; animation-delay:var(--delay); }
 .demo-chain-arrow.weak { stroke:#9b5b1f; stroke-dasharray:2 1.3; }
 .demo-chain-overlay marker path { fill:#256295; }
 .demo-board:not(.paused) .demo-cell.premise,.demo-board:not(.paused) .demo-cell.wing,.demo-board:not(.paused) .demo-cell.pivot,.demo-board:not(.paused) .demo-cell.result,.demo-board:not(.paused) .demo-cell.chain-node { animation:pattern-pulse 4.8s ease-in-out infinite; }
@@ -600,7 +600,7 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 @keyframes pattern-pulse { 0%,100% { filter:none; } 18%,42% { filter:saturate(1.35) brightness(.96); } }
 @keyframes key-pulse { 0%,100% { transform:scale(1); } 20%,42% { transform:scale(1.25); } }
 @keyframes candidate-remove { 0%,38%,100% { opacity:1; transform:scale(1); text-decoration:none; } 52%,78% { opacity:.12; transform:scale(.55); text-decoration:line-through; } }
-@keyframes demo-chain-flow { 0%,100% { opacity:.35; stroke-width:.55; } 24%,52% { opacity:1; stroke-width:.92; } }
+@keyframes demo-chain-flow { 0%,100% { opacity:.34; stroke-width:.4; } 24%,52% { opacity:.9; stroke-width:.66; } }
 @keyframes exocet-base { 0%,100% { filter:none; } 8%,23% { filter:saturate(1.5) brightness(.94); box-shadow:inset 0 0 0 2px #256295; } 34% { filter:none; } }
 @keyframes exocet-guide { 0%,20%,100% { opacity:0; transform:scaleY(.05); } 30%,72% { opacity:1; transform:scaleY(1); } 86% { opacity:.25; transform:scaleY(1); } }
 @keyframes exocet-companion { 0%,35%,100% { filter:none; } 44%,61% { filter:saturate(1.45) brightness(.94); box-shadow:inset 0 0 0 2px #bd8423; } 72% { filter:none; } }

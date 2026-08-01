@@ -453,8 +453,8 @@ onUnmounted(() => { clearInterval(timerId); clearTimeout(numberClickTimer); clea
           <template v-else><button v-for="index in 81" :key="index" class="cell" :class="{ given: isGiven(index - 1), editable: !isGiven(index - 1), selected: selected === index - 1, related: isRelated(index - 1) && selected !== index - 1, conflict: isConflict(index - 1), 'number-influence': isNumberInfluenced(index - 1), 'number-focus': isFocusedNumber(index - 1), 'hint-target': hintCells.includes(index - 1), 'chain-node-cell': chainArrowNodes.some((node) => node.indexes?.includes(index - 1)) }" type="button" role="gridcell" @click="selectCell(index - 1)" @dblclick.stop="focusCellNumber(index - 1)"><span class="cell-value">{{ cellValue(index - 1) }}</span><span v-if="!cellValue(index - 1)" class="notes"><span v-for="note in 9" :key="note" :class="{ visible: cellNotes(index - 1).includes(note) }">{{ note }}</span></span></button></template>
           <svg v-if="chainArrowSegments.length" class="chain-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             <defs>
-              <marker id="chain-arrow-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
-                <path d="M0,0 L6,3 L0,6 Z"></path>
+              <marker id="chain-arrow-head" markerWidth="4" markerHeight="4" refX="3.4" refY="2" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L4,2 L0,4 Z"></path>
               </marker>
             </defs>
             <line v-for="segment in chainArrowSegments" :key="segment.key" :class="['chain-arrow', segment.relation]" :x1="segment.from.x" :y1="segment.from.y" :x2="segment.to.x" :y2="segment.to.y"></line>
