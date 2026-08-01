@@ -8,8 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test src/logicalHint.test.js",
-    "hell:generate": "node scripts/generateHellPool.mjs",
-    "hell:generate:parallel": "node scripts/generateHellPoolParallel.mjs"
+    "hell:generate": "node scripts/generateHellPool.mjs"
   },
   "dependencies": {
     "hodoku-core-js": "^1.4.0",
