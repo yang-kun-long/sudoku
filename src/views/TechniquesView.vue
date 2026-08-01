@@ -243,6 +243,34 @@ const techniques = [
     ],
   },
   {
+    id: 'chain-aic',
+    label: '链/AIC',
+    title: '链与 AIC：沿箭头读强弱关系',
+    level: '专家',
+    summary: '链技巧不是看一堆格子，而是按顺序追踪候选之间的关系。实线表示强关系：两端至少一个成立；虚线表示弱关系：两端不能同时成立。',
+    rule: '链的端点共同限制某个目标格时，可以删除目标格中的候选。',
+    steps: ['固定一个候选或一组双候选格', '按箭头顺序阅读强关系与弱关系', '只看链的两个端点对目标格产生的共同限制', '删除被两端同时排除的候选'],
+    links: [
+      { from: 0, to: 7, relation: 'weak' },
+      { from: 7, to: 24, relation: 'strong' },
+      { from: 24, to: 15, relation: 'weak' },
+      { from: 15, to: 10, relation: 'strong' },
+      { from: 10, to: 46, relation: 'weak' },
+      { from: 46, to: 47, relation: 'weak' },
+    ],
+    cells: [
+      { index: 0, candidates: [2, 9], key: [9], role: 'chain-node' },
+      { index: 7, candidates: [2, 4], key: [2], role: 'chain-node' },
+      { index: 24, candidates: [1, 7], key: [1], role: 'chain-node' },
+      { index: 15, candidates: [1, 7], key: [7], role: 'chain-node' },
+      { index: 10, candidates: [5, 7], key: [7], role: 'chain-node' },
+      { index: 46, candidates: [5, 9], key: [5], role: 'chain-node' },
+      { index: 47, candidates: [3, 9], key: [9], role: 'chain-node' },
+      { index: 2, candidates: [1, 4, 9], eliminate: [9], role: 'target' },
+      { index: 45, candidates: [2, 6, 9], eliminate: [9], role: 'target' },
+    ],
+  },
+  {
     id: 'xyz-wing',
     label: 'XYZ-Wing',
     title: 'XYZ-Wing：三候选枢轴连接两个翼格',
@@ -299,7 +327,8 @@ const activeTechnique = computed(() => techniques.find((technique) => technique.
 const activeGuide = computed(() => findTechniqueGuide(activeTechnique.value.id))
 const exampleCells = computed(() => new Map(activeTechnique.value.cells.map((cell) => [cell.index, cell])))
 const hasEliminations = computed(() => activeTechnique.value.cells.some((cell) => cell.eliminate?.length))
-const hasPatternCells = computed(() => activeTechnique.value.cells.some((cell) => ['premise', 'wing', 'base'].includes(cell.role)))
+const hasPatternCells = computed(() => activeTechnique.value.cells.some((cell) => ['premise', 'wing', 'base', 'chain-node'].includes(cell.role)))
+const demoLinks = computed(() => activeTechnique.value.links || [])
 const animatedTechniqueGroups = computed(() => ['初级', '中级', '高级', '专家']
   .map((level) => ({ level, techniques: techniques.filter((technique) => technique.level === level) }))
   .filter((group) => group.techniques.length))
@@ -343,6 +372,9 @@ function candidateClass(index, number) {
 function guideStyle(guide) {
   if (guide.axis === 'column') return { left: `${guide.index * 100 / 9}%`, width: `${100 / 9}%` }
   return { top: `${guide.index * 100 / 9}%`, height: `${100 / 9}%` }
+}
+function cellPoint(index) {
+  return { x: ((index % 9) + 0.5) * 100 / 9, y: (Math.floor(index / 9) + 0.5) * 100 / 9 }
 }
 function replay() {
   paused.value = false
@@ -400,6 +432,14 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
             <template v-else><span v-for="number in 9" :key="number" class="demo-candidate" :class="candidateClass(index - 1, number)">{{ number }}</span></template>
           </div>
           <span v-for="guide in activeTechnique.guides || []" :key="`${guide.axis}-${guide.index}`" class="pattern-guide" :class="guide.axis" :style="guideStyle(guide)" :title="guide.label"></span>
+          <svg v-if="demoLinks.length" class="demo-chain-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <marker id="demo-chain-arrow-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L6,3 L0,6 Z"></path>
+              </marker>
+            </defs>
+            <line v-for="(link, linkIndex) in demoLinks" :key="`${link.from}-${link.to}-${linkIndex}`" :class="['demo-chain-arrow', link.relation]" :style="{ '--delay': `${linkIndex * 0.35}s` }" :x1="cellPoint(link.from).x" :y1="cellPoint(link.from).y" :x2="cellPoint(link.to).x" :y2="cellPoint(link.to).y"></line>
+          </svg>
         </div>
         <figcaption class="demo-legend">
           <template v-if="activeId === 'junior-exocet'">
@@ -489,7 +529,7 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 .demo-candidate.visible { opacity:1; }
 .demo-value { position:absolute; inset:0; display:grid; place-items:center; font-size:clamp(19px,3.2vw,30px); line-height:1; }
 .demo-cell.given { background:#f0f2ed; color:var(--ink); }
-.demo-cell.premise,.demo-cell.wing,.demo-cell.base { background:#e7f0fa; }
+.demo-cell.premise,.demo-cell.wing,.demo-cell.base,.demo-cell.chain-node { background:#e7f0fa; }
 .demo-cell.pivot { background:#f5dfaa; box-shadow:inset 0 0 0 2px #bd8423; }
 .demo-cell.result { background:#f5dfaa; box-shadow:inset 0 0 0 2px #bd8423; }
 .demo-cell.companion { background:#f5dfaa; box-shadow:inset 0 0 0 2px #bd8423; }
@@ -498,7 +538,11 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 .demo-candidate.eliminated { color:var(--danger); }
 .pattern-guide { position:absolute; inset-block:0; z-index:3; pointer-events:none; border-left:2px dashed rgba(37,98,149,.8); border-right:2px dashed rgba(37,98,149,.8); background:rgba(37,98,149,.07); opacity:0; }
 .pattern-guide.row { inset-inline:0; border:0; border-top:2px dashed rgba(37,98,149,.8); border-bottom:2px dashed rgba(37,98,149,.8); }
-.demo-board:not(.paused) .demo-cell.premise,.demo-board:not(.paused) .demo-cell.wing,.demo-board:not(.paused) .demo-cell.pivot,.demo-board:not(.paused) .demo-cell.result { animation:pattern-pulse 4.8s ease-in-out infinite; }
+.demo-chain-overlay { position:absolute; inset:0; z-index:4; pointer-events:none; overflow:visible; }
+.demo-chain-arrow { stroke:#256295; stroke-width:.72; stroke-linecap:round; marker-end:url(#demo-chain-arrow-head); filter:drop-shadow(0 1px 1px rgba(255,255,255,.78)); animation:demo-chain-flow 4.8s ease-in-out infinite; animation-delay:var(--delay); }
+.demo-chain-arrow.weak { stroke:#9b5b1f; stroke-dasharray:2 1.3; }
+.demo-chain-overlay marker path { fill:#256295; }
+.demo-board:not(.paused) .demo-cell.premise,.demo-board:not(.paused) .demo-cell.wing,.demo-board:not(.paused) .demo-cell.pivot,.demo-board:not(.paused) .demo-cell.result,.demo-board:not(.paused) .demo-cell.chain-node { animation:pattern-pulse 4.8s ease-in-out infinite; }
 .demo-board:not(.paused) .demo-candidate.key { animation:key-pulse 4.8s ease-in-out infinite; }
 .demo-board:not(.paused) .demo-candidate.eliminated { animation:candidate-remove 4.8s ease-in-out infinite; }
 .demo-board.exocet:not(.paused) .demo-cell.base { animation:exocet-base 7.2s ease-in-out infinite; }
@@ -548,7 +592,7 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 .strategy-tags a { color:var(--accent); }
 .techniques-footer { padding-top:20px; text-align:center; font-size:12px; }
 .techniques-footer a { color:var(--accent); }
-.dark .demo-cell.premise,.dark .demo-cell.wing,.dark .demo-cell.base { background:#344e5c; }
+.dark .demo-cell.premise,.dark .demo-cell.wing,.dark .demo-cell.base,.dark .demo-cell.chain-node { background:#344e5c; }
 .dark .demo-cell.given { background:#303b35; }
 .dark .demo-cell.pivot,.dark .demo-cell.result,.dark .demo-cell.companion { background:#705921; }
 .dark .legend-source { background:#344e5c; }
@@ -556,6 +600,7 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 @keyframes pattern-pulse { 0%,100% { filter:none; } 18%,42% { filter:saturate(1.35) brightness(.96); } }
 @keyframes key-pulse { 0%,100% { transform:scale(1); } 20%,42% { transform:scale(1.25); } }
 @keyframes candidate-remove { 0%,38%,100% { opacity:1; transform:scale(1); text-decoration:none; } 52%,78% { opacity:.12; transform:scale(.55); text-decoration:line-through; } }
+@keyframes demo-chain-flow { 0%,100% { opacity:.35; stroke-width:.55; } 24%,52% { opacity:1; stroke-width:.92; } }
 @keyframes exocet-base { 0%,100% { filter:none; } 8%,23% { filter:saturate(1.5) brightness(.94); box-shadow:inset 0 0 0 2px #256295; } 34% { filter:none; } }
 @keyframes exocet-guide { 0%,20%,100% { opacity:0; transform:scaleY(.05); } 30%,72% { opacity:1; transform:scaleY(1); } 86% { opacity:.25; transform:scaleY(1); } }
 @keyframes exocet-companion { 0%,35%,100% { filter:none; } 44%,61% { filter:saturate(1.45) brightness(.94); box-shadow:inset 0 0 0 2px #bd8423; } 72% { filter:none; } }
@@ -565,5 +610,5 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 @media (max-width:900px) { .technique-picker { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:760px) { .techniques-shell { padding-top:22px; } .technique-stage { grid-template-columns:1fr; align-items:start; } .demo-board { margin:0 auto; } .technique-copy { max-width:640px; } }
 @media (max-width:460px) { .techniques-shell { width:min(100% - 18px,1080px); } .techniques-header { gap:8px; } .techniques-header .eyebrow { display:none; } .techniques-header h1 { font-size:23px; } .back-link { width:34px; min-height:32px; overflow:hidden; white-space:nowrap; padding:0 9px; color:transparent; font-size:0; } .back-link::before { content:'←'; color:var(--ink); font-size:18px; } .techniques-actions { gap:5px; } .technique-picker { grid-template-columns:1fr; gap:8px; margin-bottom:16px; } .technique-group { padding:10px; } .technique-group > div { grid-template-columns:repeat(3,minmax(0,1fr)); } .technique-group button { min-height:34px; padding:0 5px; font-size:12px; } .technique-stage { padding-top:16px; gap:24px; } .demo-toolbar { margin-bottom:7px; } .technique-copy h2 { font-size:21px; } .term-list { grid-template-columns:1fr; } .library-heading { align-items:stretch; flex-direction:column; gap:16px; } .strategy-search { width:100%; } .strategy-tags { padding-left:0; } }
-@media (prefers-reduced-motion:reduce) { .demo-board * { animation:none !important; } .pattern-guide { opacity:1; transform:none; } }
+@media (prefers-reduced-motion:reduce) { .demo-board * { animation:none !important; } .pattern-guide { opacity:1; transform:none; } .demo-chain-arrow { opacity:1; } }
 </style>

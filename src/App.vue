@@ -18,6 +18,7 @@ const smartCandidatesEnabled = ref(false)
 const focusedNumber = ref(0)
 const hintCells = ref([])
 const hintMessage = ref('')
+const hintChain = ref(null)
 const lastHintStrategy = ref('')
 const hintLoading = ref(false)
 const difficulty = ref('easy')
@@ -38,6 +39,20 @@ const newPuzzleLabel = computed(() => difficulty.value === 'hell' ? '生成地�
 const filledCount = computed(() => manualEditing.value ? manualGrid.value.filter(Boolean).length : puzzle.value.flat().filter(Boolean).length + entries.value.filter(Boolean).length)
 const timerText = computed(() => `${String(Math.floor(seconds.value / 60)).padStart(2, '0')}:${String(seconds.value % 60).padStart(2, '0')}`)
 const hintGuide = computed(() => findTechniqueGuide(lastHintStrategy.value))
+const chainArrowNodes = computed(() => (hintChain.value?.nodes || []).map((node, index) => {
+  const indexes = node.indexes?.length ? node.indexes : []
+  const centers = indexes.map((cellIndex) => ({ x: ((cellIndex % 9) + 0.5) * 100 / 9, y: (Math.floor(cellIndex / 9) + 0.5) * 100 / 9 }))
+  const center = centers.length
+    ? centers.reduce((sum, point) => ({ x: sum.x + point.x / centers.length, y: sum.y + point.y / centers.length }), { x: 0, y: 0 })
+    : null
+  return center ? { ...node, order: index + 1, x: center.x, y: center.y } : null
+}).filter(Boolean))
+const chainArrowSegments = computed(() => chainArrowNodes.value.slice(1).map((node, index) => ({
+  key: `${chainArrowNodes.value[index].cell}-${node.cell}-${index}`,
+  from: chainArrowNodes.value[index],
+  to: node,
+  relation: node.relation,
+})))
 const puzzleId = ref('-')
 const sourceLabel = ref('本地生成')
 const sourceOptions = [
@@ -59,7 +74,7 @@ function digitCount(number) {
 }
 function isRelated(index) { if (selected.value < 0) return false; const a = cellAt(index), b = cellAt(selected.value); return a.row === b.row || a.col === b.col || (Math.floor(a.row / 3) === Math.floor(b.row / 3) && Math.floor(a.col / 3) === Math.floor(b.col / 3)) }
 function isConflict(index) { const { row, col } = cellAt(index); return entries.value[index] && entries.value[index] !== solution.value[row]?.[col] }
-function clearLogicalHint() { hintCells.value = []; hintMessage.value = '' }
+function clearLogicalHint() { hintCells.value = []; hintMessage.value = ''; hintChain.value = null }
 function selectCell(index) { selected.value = index; focusedNumber.value = 0; clearLogicalHint() }
 function focusCellNumber(index) { const value = Number(manualEditing.value ? manualGrid.value[index] : cellValue(index)); if (!value) return; focusedNumber.value = value; selected.value = -1 }
 function isFocusedNumber(index) { return focusedNumber.value > 0 && Number(cellValue(index)) === focusedNumber.value }
@@ -408,6 +423,7 @@ async function giveHint() {
   }
   hintCells.value = hint.cells
   hintMessage.value = hint.message
+  hintChain.value = hint.chain || null
   lastHintStrategy.value = hint.strategy
   setStatus('已标出下一步推理范围。', 'success')
   saveGame()
@@ -434,7 +450,19 @@ onUnmounted(() => { clearInterval(timerId); clearTimeout(numberClickTimer); clea
         <div class="board-head"><div class="difficulty-display"><span class="label">当前难度</span><strong>{{ difficultyLabel }}</strong></div><div class="quick-actions" aria-label="常用工具"><button class="quick-action mobile-primary" type="button" title="分享题目" aria-label="分享题目" @click="sharePuzzle">↗</button><button class="quick-action mobile-primary" :class="{ active: pencilMode }" type="button" title="铅笔" aria-label="铅笔" :aria-pressed="pencilMode" @click="togglePencilMode">✎</button><button class="quick-action mobile-primary" :class="{ active: smartCandidatesEnabled }" type="button" title="智能余数" aria-label="智能余数" :aria-pressed="smartCandidatesEnabled" @click="fillSmartCandidates">候</button><button class="quick-action mobile-primary" type="button" title="橡皮擦" aria-label="橡皮擦" @click="eraseSelected">⌫</button><button class="quick-action" type="button" :title="hintLoading ? '正在分析' : '提示'" :aria-label="hintLoading ? '正在分析提示' : '提示'" :disabled="hintLoading" @click="giveHint">{{ hintLoading ? '…' : '✦' }}</button><button class="quick-action" type="button" title="撤销" aria-label="撤销" @click="undo">↶</button><button class="quick-action" type="button" title="检查答案" aria-label="检查答案" @click="checkAnswer">✓</button></div><div class="timer">{{ timerText }}</div></div>
         <div class="board" role="grid" aria-label="数独棋盘">
           <template v-if="manualEditing"><button v-for="index in 81" :key="index" class="cell editable" :class="{ selected: selected === index - 1 }" type="button" role="gridcell" @click="selectCell(index - 1)">{{ manualGrid[index - 1] || '' }}</button></template>
-          <template v-else><button v-for="index in 81" :key="index" class="cell" :class="{ given: isGiven(index - 1), editable: !isGiven(index - 1), selected: selected === index - 1, related: isRelated(index - 1) && selected !== index - 1, conflict: isConflict(index - 1), 'number-influence': isNumberInfluenced(index - 1), 'number-focus': isFocusedNumber(index - 1), 'hint-target': hintCells.includes(index - 1) }" type="button" role="gridcell" @click="selectCell(index - 1)" @dblclick.stop="focusCellNumber(index - 1)"><span class="cell-value">{{ cellValue(index - 1) }}</span><span v-if="!cellValue(index - 1)" class="notes"><span v-for="note in 9" :key="note" :class="{ visible: cellNotes(index - 1).includes(note) }">{{ note }}</span></span></button></template>
+          <template v-else><button v-for="index in 81" :key="index" class="cell" :class="{ given: isGiven(index - 1), editable: !isGiven(index - 1), selected: selected === index - 1, related: isRelated(index - 1) && selected !== index - 1, conflict: isConflict(index - 1), 'number-influence': isNumberInfluenced(index - 1), 'number-focus': isFocusedNumber(index - 1), 'hint-target': hintCells.includes(index - 1), 'chain-node-cell': chainArrowNodes.some((node) => node.indexes?.includes(index - 1)) }" type="button" role="gridcell" @click="selectCell(index - 1)" @dblclick.stop="focusCellNumber(index - 1)"><span class="cell-value">{{ cellValue(index - 1) }}</span><span v-if="!cellValue(index - 1)" class="notes"><span v-for="note in 9" :key="note" :class="{ visible: cellNotes(index - 1).includes(note) }">{{ note }}</span></span></button></template>
+          <svg v-if="chainArrowSegments.length" class="chain-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <marker id="chain-arrow-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L6,3 L0,6 Z"></path>
+              </marker>
+            </defs>
+            <line v-for="segment in chainArrowSegments" :key="segment.key" :class="['chain-arrow', segment.relation]" :x1="segment.from.x" :y1="segment.from.y" :x2="segment.to.x" :y2="segment.to.y"></line>
+            <g v-for="node in chainArrowNodes" :key="`${node.cell}-${node.order}`" class="chain-node-marker">
+              <circle :cx="node.x" :cy="node.y" r="2.45"></circle>
+              <text :x="node.x" :y="node.y + 0.9">{{ node.order }}</text>
+            </g>
+          </svg>
         </div>
         <p class="status" :class="statusType" role="status">{{ status }}</p>
         <div v-if="hintMessage" class="hint-panel">
@@ -442,6 +470,17 @@ onUnmounted(() => { clearInterval(timerId); clearTimeout(numberClickTimer); clea
           <div class="hint-copy">
             <RouterLink v-if="hintGuide" class="hint-method-link" :to="`/techniques/${hintGuide.id}`">本次方法：{{ hintGuide.label }}</RouterLink>
             <span>{{ hintMessage }}</span>
+            <div v-if="hintChain?.nodes?.length" class="chain-steps" aria-label="链式推理拆解">
+              <div v-for="(node, stepIndex) in hintChain.nodes" :key="`${node.cell}-${stepIndex}`" class="chain-step" :class="node.relation">
+                <b>{{ stepIndex + 1 }}</b>
+                <span>{{ node.cellText }}</span>
+                <small>{{ node.candidate ? `候选 ${node.candidate} · ${node.relationLabel}` : node.relationLabel }}</small>
+              </div>
+            </div>
+            <details v-if="hintChain?.raw" class="chain-notation">
+              <summary>高级记号</summary>
+              <code>{{ hintChain.raw }}</code>
+            </details>
           </div>
         </div>
         <div class="number-pad" aria-label="数字键盘"><button v-for="number in 9" :key="number" type="button" @pointerdown="startNumberLongPress(number, $event)" @pointerup="finishNumberPress(number)" @pointercancel="cancelNumberLongPress" @pointerleave="cancelNumberLongPress" @contextmenu.prevent @click="handleNumberButtonClick(number, $event)" @dblclick.prevent="handleNumberDoubleClick(number)"><span class="number-label">{{ number }}</span><span class="number-count">{{ digitCount(number) }}/9</span></button><button class="erase" type="button" @click="enterNumber(0)">清除</button></div>
