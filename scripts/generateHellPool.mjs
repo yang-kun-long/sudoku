@@ -45,6 +45,7 @@ function parseArgs() {
     output: defaultOutput,
     minScore: undefined,
     maxScore: undefined,
+    maxRuntimeMinutes: 50,
   }
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
@@ -55,8 +56,9 @@ function parseArgs() {
     else if (arg === '--output') options.output = path.resolve(projectRoot, readValue())
     else if (arg === '--min-score') options.minScore = Number(readValue())
     else if (arg === '--max-score') options.maxScore = Number(readValue())
+    else if (arg === '--max-runtime-minutes') options.maxRuntimeMinutes = Number(readValue())
     else if (arg === '--help') {
-      console.log('Usage: node scripts/generateHellPool.mjs [--attempts 500] [--target-additions 10] [--difficulty Extreme] [--min-score 2000] [--max-score 99999]')
+      console.log('Usage: node scripts/generateHellPool.mjs [--attempts 500] [--target-additions 10] [--difficulty Extreme] [--min-score 2000] [--max-score 99999] [--max-runtime-minutes 50]')
       process.exit(0)
     }
   }
@@ -162,8 +164,15 @@ async function main() {
     maxScore: Number.isFinite(options.maxScore) ? options.maxScore : undefined,
   }
   let accepted = 0
+  const deadline = Number.isFinite(options.maxRuntimeMinutes) && options.maxRuntimeMinutes > 0
+    ? Date.now() + options.maxRuntimeMinutes * 60 * 1000
+    : Infinity
 
   for (let attempt = 1; attempt <= options.attempts && accepted < options.targetAdditions; attempt += 1) {
+    if (Date.now() >= deadline) {
+      console.log(`stopping before workflow timeout after ${attempt - 1} attempts`)
+      break
+    }
     const generated = await generateSudoku(generatedOptions)
     if (!generated?.puzzle || seen.has(generated.puzzle)) continue
 

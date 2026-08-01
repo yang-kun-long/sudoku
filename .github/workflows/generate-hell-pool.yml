@@ -38,6 +38,7 @@ jobs:
           --attempts "${{ inputs.attempts || '1000' }}"
           --target-additions "${{ inputs.target_additions || '10' }}"
           --difficulty Extreme
+          --max-runtime-minutes 50
 
       - name: Test and build
         run: |
