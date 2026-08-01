@@ -40,7 +40,11 @@ let numberLongPressTriggered = false
 let ratingRequestId = 0
 
 const difficultyLabel = computed(() => ratingLabel.value || DIFFICULTIES[difficulty.value].label)
-const hodokuRatingText = computed(() => hodokuRatingLoading.value ? '评分中' : hodokuScore.value ? `${hodokuScore.value} · ${hodokuDifficulty.value || '-'}` : '-')
+const hodokuRatingText = computed(() => {
+  if (hodokuRatingLoading.value) return '评分中'
+  if (hodokuScore.value) return String(hodokuScore.value)
+  return hodokuDifficulty.value || '-'
+})
 const newPuzzleLabel = computed(() => difficulty.value === 'hell' ? '生成地狱题目' : sourceChoice.value === 'generated' ? '生成新题目' : '抽取题目')
 const filledCount = computed(() => manualEditing.value ? manualGrid.value.filter(Boolean).length : puzzle.value.flat().filter(Boolean).length + entries.value.filter(Boolean).length)
 const timerText = computed(() => `${String(Math.floor(seconds.value / 60)).padStart(2, '0')}:${String(seconds.value % 60).padStart(2, '0')}`)
