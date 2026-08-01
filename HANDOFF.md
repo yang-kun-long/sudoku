@@ -13,6 +13,7 @@
 - 当前目录已初始化 `.git`，`main` 跟踪 `origin/main`
 - Vercel CLI：`D:\Program Files\nodejs\node_global\vercel.cmd`
 - 部署命令：`& 'D:\Program Files\nodejs\node_global\vercel.cmd' --prod --yes`
+- Vercel 项目已通过 `vercel git connect https://github.com/yang-kun-long/sudoku` 连接 GitHub；后续 workflow 若提交 `main`，应触发 Vercel 自动部署
 
 项目没有后端、数据库、云函数或远程求解 API。高级提示使用浏览器 Web Worker；题盘只在用户设备中计算，Worker 脚本和 HoDoKu 运行资源均从本站静态资源加载。
 
@@ -123,6 +124,7 @@ npm run build
 - `/HODOKU-GPL-3.0.txt` 返回 200
 - 地狱难度已改为 verified 题库入口；当前题库为空时会提示先运行离线铸题脚本
 - 最新生产环境 `/`、`/techniques`、`/HODOKU-GPL-3.0.txt` 返回 200
+- GitHub Action 首次手动运行 `30686001548` 成功完成，1000 次候选未找到合格题，题库仍为空；第二次运行 `30686876446` 已触发并运行中
 
 构建存在两个已知警告：
 
