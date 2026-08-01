@@ -95,7 +95,7 @@ Exocet 技巧动画显示三条交叉线（第 3、6、8 列）、伴随格 `r7c
 - `src/sudoku.js`：生成、求解、唯一解、难度和分享编解码；地狱难度使用 verified 题库做数字/行列/宫带等价变换
 - `src/data/hell/verified.json`：离线审题通过的人类可解地狱题库；当前标准为 HoDoKu Extreme、高分（默认 `minScore=1800`）、完整路径无 Brute Force / Give Up / Incomplete Solution
 - `scripts/generateHellPool.mjs`：离线铸题脚本，使用 HoDoKu 生成 Extreme 候选，再验证完整路径无搜索和评分门槛；推荐命令 `npm run hell:generate -- --attempts 300 --target-additions 5 --min-score 1800`
-- `.github/workflows/generate-hell-pool.yml`：定时/手动铸题 workflow；公开仓库策略为每周二/周五各一次、1000 次候选、最多追加 10 题、脚本 50 分钟主动收尾、job 60 分钟硬超时，只有题库变化时才提交，避免空部署
+- `.github/workflows/generate-hell-pool.yml`：定时/手动铸题 workflow；公开仓库策略为每天 UTC 18:17（中国时间约 02:17）运行、3000 次候选、最多追加 50 题、脚本 50 分钟主动收尾、job 60 分钟硬超时，只有题库变化时才提交，避免空部署
 - `src/logicalHint.js`：同步逻辑提示规则
 - `src/logicalHint.test.js`：14 条逻辑回归测试
 - `src/advancedHint.js`：Worker 生命周期、请求匹配和超时

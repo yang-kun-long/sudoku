@@ -6,14 +6,13 @@ on:
       attempts:
         description: Candidate puzzles to try
         required: false
-        default: "1000"
+        default: "3000"
       target_additions:
         description: Maximum accepted puzzles to append
         required: false
-        default: "10"
+        default: "50"
   schedule:
-    - cron: "17 18 * * 2"
-    - cron: "17 18 * * 5"
+    - cron: "17 18 * * *"
 
 permissions:
   contents: write
@@ -35,8 +34,8 @@ jobs:
       - name: Generate verified hell puzzles
         run: >
           npm run hell:generate --
-          --attempts "${{ inputs.attempts || '1000' }}"
-          --target-additions "${{ inputs.target_additions || '10' }}"
+          --attempts "${{ inputs.attempts || '3000' }}"
+          --target-additions "${{ inputs.target_additions || '50' }}"
           --difficulty Extreme
           --min-score 1800
           --max-runtime-minutes 50

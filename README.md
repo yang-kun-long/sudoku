@@ -6,7 +6,7 @@
 
 ## 运行
 
-安装依赖后运行 `npm run dev`，也可以运行 `npm run build` 构建静态文件。离线筛选人类可解地狱题可运行 `npm run hell:generate -- --attempts 300 --target-additions 5 --min-score 1800`。
+安装依赖后运行 `npm run dev`，也可以运行 `npm run build` 构建静态文件。离线筛选人类可解地狱题可运行 `npm run hell:generate -- --attempts 3000 --target-additions 50 --min-score 1800`。
 
 ## 特性
 
