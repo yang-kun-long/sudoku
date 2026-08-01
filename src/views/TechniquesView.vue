@@ -464,6 +464,14 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
         <ol>
           <li v-for="step in activeTechnique.steps" :key="step">{{ step }}</li>
         </ol>
+        <section v-if="activeGuide?.example" class="inline-example">
+          <h3>{{ activeGuide.example.title }}</h3>
+          <p>{{ activeGuide.example.setup }}</p>
+          <ol>
+            <li v-for="step in activeGuide.example.chain" :key="step">{{ step }}</li>
+          </ol>
+          <p class="inline-conclusion">{{ activeGuide.example.conclusion }}</p>
+        </section>
         <RouterLink v-if="activeGuide" class="tutorial-link" :to="`/techniques/${activeGuide.id}`">阅读新手教程</RouterLink>
         <dl v-if="activeTechnique.terms?.length" class="term-list">
           <div v-for="term in activeTechnique.terms" :key="term.name">
@@ -569,6 +577,11 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 .rule-line strong { display:block; margin-bottom:4px; color:var(--accent); font-size:11px; }
 .technique-copy ol { margin:18px 0 0; padding-left:22px; color:var(--muted); font-size:13px; line-height:1.8; }
 .technique-copy li { padding-left:4px; }
+.inline-example { margin-top:20px; padding-top:16px; border-top:1px solid var(--line); }
+.inline-example h3 { margin:0 0 9px; font-size:16px; line-height:1.35; }
+.inline-example p { margin-bottom:12px; font-size:13px; line-height:1.75; }
+.inline-example ol { margin-top:10px; font-size:12px; line-height:1.7; }
+.inline-conclusion { margin:14px 0 0 !important; padding:10px 11px; border-left:3px solid var(--accent); background:var(--accent-soft); color:var(--ink) !important; }
 .tutorial-link { min-height:36px; display:inline-flex; align-items:center; margin-top:18px; padding:0 11px; border:1px solid var(--line); border-radius:6px; color:var(--accent); text-decoration:none; font-size:13px; font-weight:800; }
 .term-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 18px; margin:20px 0 0; padding-top:4px; border-top:1px solid var(--line); }
 .term-list div { padding:11px 0; border-bottom:1px solid var(--line); }
