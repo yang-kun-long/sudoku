@@ -9,11 +9,11 @@
 - GitHub 仓库：https://github.com/yang-kun-long/sudoku
 - 正式域名：https://shudu.yang.team/
 - 技巧页：https://shudu.yang.team/techniques
-- 最新生产部署：`dpl_56jAhMJWuWrQk7Hz2adg3zNaMUiG`
+- 最新生产部署：`dpl_ELPid5LcnHGGAi46TQS5niTyucUH`
 - 当前目录已初始化 `.git`，`main` 跟踪 `origin/main`
 - Vercel CLI：`D:\Program Files\nodejs\node_global\vercel.cmd`
 - 部署命令：`& 'D:\Program Files\nodejs\node_global\vercel.cmd' --prod --yes`
-- Vercel 项目已通过 `vercel git connect https://github.com/yang-kun-long/sudoku` 连接 GitHub；后续 workflow 若提交 `main`，应触发 Vercel 自动部署
+- Vercel 项目已通过 `vercel git connect https://github.com/yang-kun-long/sudoku` 连接 GitHub；后续 workflow 若提交 `main`，会触发 Vercel 自动部署
 
 项目没有后端、数据库、云函数或远程求解 API。高级提示使用浏览器 Web Worker；题盘只在用户设备中计算，Worker 脚本和 HoDoKu 运行资源均从本站静态资源加载。
 
