@@ -6,10 +6,11 @@
 
 - 工作目录：`D:\ykl\助管\信息\0722\sudoku`
 - 技术栈：Vue 3、Vue Router、Vite，纯前端静态站点
+- GitHub 仓库：https://github.com/yang-kun-long/sudoku
 - 正式域名：https://shudu.yang.team/
 - 技巧页：https://shudu.yang.team/techniques
 - 最新生产部署：`dpl_56jAhMJWuWrQk7Hz2adg3zNaMUiG`
-- 当前目录没有 `.git`，不要假定可以提交或查看 Git 历史
+- 当前目录已初始化 `.git`，`main` 跟踪 `origin/main`
 - Vercel CLI：`D:\Program Files\nodejs\node_global\vercel.cmd`
 - 部署命令：`& 'D:\Program Files\nodejs\node_global\vercel.cmd' --prod --yes`
 
