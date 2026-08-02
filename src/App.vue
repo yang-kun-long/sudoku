@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { DATASET_SOURCE, DIFFICULTIES, candidates, decodePuzzle, encodePuzzle, generateHellPuzzle, generatePuzzle, generateSolution, getDatasetPuzzle, pickDatasetPuzzle, ratePuzzle, solve } from './sudoku'
+import { decodeSharedState, encodeSharedState } from './shareState'
 import { getLogicalHint } from './logicalHint'
 import { getAdvancedHint, getAdvancedRating } from './advancedHint'
 import { findTechniqueGuide } from './techniqueGuides'
@@ -295,6 +296,75 @@ function loadSharedPuzzle() {
   }
   return false
 }
+function restoreSharedHintHistory(count) {
+  return Array.from({ length: count }, (_, index) => {
+    const number = count - index
+    return {
+      id: `shared-${number}`,
+      number,
+      time: '--:--',
+      strategy: 'shared-progress',
+      label: '已恢复提示',
+      message: '分享进度只恢复提示次数，不包含提示文本。',
+      result: '分享进度中记录的提示次数。',
+      cells: '',
+    }
+  })
+}
+function applySharedState(shared) {
+  puzzle.value = shared.puzzle
+  solution.value = shared.solution
+  entries.value = shared.entries
+  notes.value = shared.notes
+  history.value = []
+  manualEditing.value = false
+  selected.value = -1
+  focusedNumber.value = 0
+  pencilMode.value = false
+  smartCandidatesEnabled.value = shared.smartCandidatesEnabled
+  lastHintStrategy.value = ''
+  hintHistory.value = restoreSharedHintHistory(shared.hintCount)
+  clearAdvancedRating()
+  mistakes.value = shared.mistakes
+  seconds.value = shared.seconds
+  clearLogicalHint()
+  puzzleId.value = shared.id
+  sourceLabel.value = shared.sourceLabel
+  sourceChoice.value = shared.sourceChoice
+  if (shared.difficulty) difficulty.value = shared.difficulty
+  ratingLabel.value = shared.ratingLabel
+  setStatus('已载入分享进度，可以继续解题。', 'success')
+  startTimer(); saveGame()
+  if (shared.difficulty !== 'hell') rateCurrentPuzzle(puzzle.value)
+}
+function loadSharedState() {
+  const raw = location.hash.startsWith('#state=') ? decodeURIComponent(location.hash.slice(7)) : ''
+  if (!raw) return false
+  const shared = decodeSharedState(raw)
+  if (!shared) return false
+  applySharedState(shared)
+  return true
+}
+async function copyText(text, successMessage) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      const input = document.createElement('textarea')
+      input.value = text
+      input.setAttribute('readonly', '')
+      input.style.position = 'fixed'
+      input.style.opacity = '0'
+      document.body.appendChild(input)
+      input.select()
+      document.execCommand('copy')
+      input.remove()
+    }
+    setStatus(successMessage, 'success')
+  } catch (error) {
+    setStatus('复制失败，请稍后重试。', 'error')
+  }
+}
 async function sharePuzzle() {
   if (manualEditing.value) return setStatus('请先点击“开始解题”，再分享题目。', 'error')
   const encodedPuzzle = encodePuzzle(puzzle.value)
@@ -304,24 +374,13 @@ async function sharePuzzle() {
       ? `h.${encodedPuzzle}`
       : `p.${encodedPuzzle}`
   const shareUrl = `${location.origin}${location.pathname}#share=${encodeURIComponent(payload)}`
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(shareUrl)
-    } else {
-      const input = document.createElement('textarea')
-      input.value = shareUrl
-      input.setAttribute('readonly', '')
-      input.style.position = 'fixed'
-      input.style.opacity = '0'
-      document.body.appendChild(input)
-      input.select()
-      document.execCommand('copy')
-      input.remove()
-    }
-    setStatus('分享链接已复制。', 'success')
-  } catch (error) {
-    setStatus('复制失败，请稍后重试。', 'error')
-  }
+  await copyText(shareUrl, '题目链接已复制。')
+}
+async function shareProgress() {
+  const payload = encodeSharedState({ puzzle: puzzle.value, puzzleId: puzzleId.value, entries: entries.value, notes: notes.value, seconds: seconds.value, mistakes: mistakes.value, hintCount: hintHistory.value.length, smartCandidatesEnabled: smartCandidatesEnabled.value, manualEditing: manualEditing.value })
+  if (!payload) return setStatus('请先点击“开始解题”，再分享进度。', 'error')
+  const shareUrl = `${location.origin}${location.pathname}#state=${encodeURIComponent(payload)}`
+  await copyText(shareUrl, '进度链接已复制。')
 }
 function loadGame() {
   try {
@@ -525,16 +584,16 @@ function onKeydown(event) { if (/^[1-9]$/.test(event.key)) enterNumber(Number(ev
 watch([puzzle, entries, notes, manualGrid, mistakes, seconds], saveGame, { deep: true })
 function handleSourceChange() { if (sourceChoice.value === 'manual') enterManualMode(); else if (manualEditing.value) { manualEditing.value = false; setStatus('已切换题目来源，点击按钮开始。') } }
 watch(isDark, (value) => { document.body.classList.toggle('dark-page', value) }, { immediate: true })
-onMounted(() => { if (!loadSharedPuzzle()) loadGame(); window.addEventListener('keydown', onKeydown) })
+onMounted(() => { if (!loadSharedState() && !loadSharedPuzzle()) loadGame(); window.addEventListener('keydown', onKeydown) })
 onUnmounted(() => { clearInterval(timerId); clearTimeout(numberClickTimer); clearTimeout(numberLongPressTimer); window.removeEventListener('keydown', onKeydown) })
 </script>
 
 <template>
   <main class="app-shell" :class="{ dark: isDark }">
-    <header class="topbar"><div class="brand-block"><p class="eyebrow">SUDOKU LAB</p><h1>数独练习</h1></div><div class="mobile-actions" aria-label="常用工具"><button class="quick-action" type="button" title="分享题目" aria-label="分享题目" @click="sharePuzzle">↗</button><button class="quick-action" :class="{ active: pencilMode }" type="button" title="铅笔" aria-label="铅笔" :aria-pressed="pencilMode" @click="togglePencilMode">✎</button><button class="quick-action" :class="{ active: smartCandidatesEnabled }" type="button" title="智能余数" aria-label="智能余数" :aria-pressed="smartCandidatesEnabled" @click="fillSmartCandidates">候</button><button class="quick-action" type="button" title="橡皮擦" aria-label="橡皮擦" @click="eraseSelected">⌫</button></div><div class="topbar-links"><RouterLink class="icon-button guide-link" to="/manual" title="操作手册" aria-label="操作手册">册</RouterLink><RouterLink class="icon-button guide-link" to="/techniques" title="数独技巧图解" aria-label="数独技巧图解">?</RouterLink><button class="icon-button" type="button" title="切换主题" aria-label="切换主题" @click="toggleTheme">◐</button></div></header>
+    <header class="topbar"><div class="brand-block"><p class="eyebrow">SUDOKU LAB</p><h1>数独练习</h1></div><div class="mobile-actions" aria-label="常用工具"><button class="quick-action" type="button" title="分享进度" aria-label="分享进度" @click="shareProgress">↗</button><button class="quick-action" :class="{ active: pencilMode }" type="button" title="铅笔" aria-label="铅笔" :aria-pressed="pencilMode" @click="togglePencilMode">✎</button><button class="quick-action" :class="{ active: smartCandidatesEnabled }" type="button" title="智能余数" aria-label="智能余数" :aria-pressed="smartCandidatesEnabled" @click="fillSmartCandidates">候</button><button class="quick-action" type="button" title="橡皮擦" aria-label="橡皮擦" @click="eraseSelected">⌫</button></div><div class="topbar-links"><RouterLink class="icon-button guide-link" to="/manual" title="操作手册" aria-label="操作手册">册</RouterLink><RouterLink class="icon-button guide-link" to="/techniques" title="数独技巧图解" aria-label="数独技巧图解">?</RouterLink><button class="icon-button" type="button" title="切换主题" aria-label="切换主题" @click="toggleTheme">◐</button></div></header>
     <section class="game-layout">
       <section class="board-panel" aria-label="数独棋盘">
-        <div class="board-head"><div class="difficulty-display"><span class="label">当前难度</span><strong>{{ difficultyLabel }}</strong></div><div class="quick-actions" aria-label="常用工具"><button class="quick-action mobile-primary" type="button" title="分享题目" aria-label="分享题目" @click="sharePuzzle">↗</button><button class="quick-action mobile-primary" :class="{ active: pencilMode }" type="button" title="铅笔" aria-label="铅笔" :aria-pressed="pencilMode" @click="togglePencilMode">✎</button><button class="quick-action mobile-primary" :class="{ active: smartCandidatesEnabled }" type="button" title="智能余数" aria-label="智能余数" :aria-pressed="smartCandidatesEnabled" @click="fillSmartCandidates">候</button><button class="quick-action mobile-primary" type="button" title="橡皮擦" aria-label="橡皮擦" @click="eraseSelected">⌫</button><button class="quick-action" type="button" :title="hintLoading ? '正在分析' : '提示'" :aria-label="hintLoading ? '正在分析提示' : '提示'" :disabled="hintLoading" @click="giveHint">{{ hintLoading ? '…' : '✦' }}</button><button class="quick-action" type="button" title="撤销" aria-label="撤销" @click="undo">↶</button><button class="quick-action" type="button" title="检查答案" aria-label="检查答案" @click="checkAnswer">✓</button></div><div class="timer">{{ timerText }}</div></div>
+        <div class="board-head"><div class="difficulty-display"><span class="label">当前难度</span><strong>{{ difficultyLabel }}</strong></div><div class="quick-actions" aria-label="常用工具"><button class="quick-action mobile-primary" type="button" title="分享进度" aria-label="分享进度" @click="shareProgress">↗</button><button class="quick-action mobile-primary" :class="{ active: pencilMode }" type="button" title="铅笔" aria-label="铅笔" :aria-pressed="pencilMode" @click="togglePencilMode">✎</button><button class="quick-action mobile-primary" :class="{ active: smartCandidatesEnabled }" type="button" title="智能余数" aria-label="智能余数" :aria-pressed="smartCandidatesEnabled" @click="fillSmartCandidates">候</button><button class="quick-action mobile-primary" type="button" title="橡皮擦" aria-label="橡皮擦" @click="eraseSelected">⌫</button><button class="quick-action" type="button" :title="hintLoading ? '正在分析' : '提示'" :aria-label="hintLoading ? '正在分析提示' : '提示'" :disabled="hintLoading" @click="giveHint">{{ hintLoading ? '…' : '✦' }}</button><button class="quick-action" type="button" title="撤销" aria-label="撤销" @click="undo">↶</button><button class="quick-action" type="button" title="检查答案" aria-label="检查答案" @click="checkAnswer">✓</button></div><div class="timer">{{ timerText }}</div></div>
         <div class="board" role="grid" aria-label="数独棋盘">
           <template v-if="manualEditing"><button v-for="index in 81" :key="index" class="cell editable" :class="{ selected: selected === index - 1 }" type="button" role="gridcell" @click="selectCell(index - 1)">{{ manualGrid[index - 1] || '' }}</button></template>
           <template v-else><button v-for="index in 81" :key="index" class="cell" :class="{ given: isGiven(index - 1), editable: !isGiven(index - 1), selected: selected === index - 1, related: isRelated(index - 1) && selected !== index - 1, conflict: isConflict(index - 1), 'number-influence': isNumberInfluenced(index - 1), 'number-focus': isFocusedNumber(index - 1), 'hint-target': hintCells.includes(index - 1), 'chain-node-cell': chainArrowNodes.some((node) => node.indexes?.includes(index - 1)) }" type="button" role="gridcell" @click="selectCell(index - 1)" @dblclick.stop="focusCellNumber(index - 1)"><span class="cell-value">{{ cellValue(index - 1) }}</span><span v-if="!cellValue(index - 1)" class="notes"><span v-for="note in 9" :key="note" :class="{ visible: cellNotes(index - 1).includes(note) }">{{ note }}</span></span></button></template>
