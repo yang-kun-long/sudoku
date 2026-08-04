@@ -33,6 +33,7 @@ const mistakes = ref(0)
 const seconds = ref(0)
 const status = ref('选择一个格子，然后输入数字。')
 const statusType = ref('')
+const settlementDismissed = ref(false)
 const isDark = ref(localStorage.getItem('sudoku-theme') === 'dark')
 let timerId
 let numberClickTimer
@@ -41,6 +42,14 @@ let numberLongPressTriggered = false
 let ratingRequestId = 0
 
 const difficultyLabel = computed(() => ratingLabel.value || DIFFICULTIES[difficulty.value].label)
+const isSolvedBoard = computed(() => {
+  if (manualEditing.value || puzzle.value.length !== 9 || solution.value.length !== 9 || entries.value.length !== 81) return false
+  return entries.value.every((number, index) => {
+    const { row, col } = cellAt(index)
+    return (puzzle.value[row]?.[col] || number) === solution.value[row]?.[col]
+  })
+})
+const showSettlementCard = computed(() => isSolvedBoard.value && !settlementDismissed.value)
 const hodokuRatingText = computed(() => {
   if (hodokuRatingLoading.value) return '评分中'
   if (hodokuScore.value) return String(hodokuScore.value)
@@ -66,6 +75,15 @@ const chainArrowSegments = computed(() => chainArrowNodes.value.slice(1).map((no
 })))
 const puzzleId = ref('-')
 const sourceLabel = ref('本地生成')
+const completionSummary = computed(() => [
+  { label: '用时', value: timerText.value },
+  { label: '错误', value: String(mistakes.value) },
+  { label: '提示', value: String(hintHistory.value.length) },
+  { label: '难度', value: difficultyLabel.value },
+  { label: '评分', value: hodokuRatingText.value },
+  { label: '题号', value: puzzleId.value },
+])
+const shareResultText = computed(() => `我完成了 ${difficultyLabel.value} 数独，用时 ${timerText.value}，错误 ${mistakes.value}，提示 ${hintHistory.value.length}。`)
 const sourceOptions = [
   { value: 'mixed', label: '混合题库' },
   { value: 'human', label: '真人难度题库' },
@@ -76,6 +94,7 @@ const sourceOptions = [
 const hodokuDifficultyNames = { Easy: '简单', Medium: '中等', Hard: '困难', Unfair: '高难', Extreme: '极限' }
 
 function setStatus(message, type = '') { status.value = message; statusType.value = type }
+function resetSettlementState() { settlementDismissed.value = false }
 function cellAt(index) { return { row: Math.floor(index / 9), col: index % 9 } }
 function cellName(index) { const { row, col } = cellAt(index); return `第 ${row + 1} 行第 ${col + 1} 列` }
 function isGiven(index) { const { row, col } = cellAt(index); return Boolean(puzzle.value[row]?.[col]) }
@@ -102,7 +121,7 @@ function isNumberInfluenced(index) {
 }
 
 function saveGame() {
-  localStorage.setItem('sudoku-state', JSON.stringify({ puzzle: puzzle.value, solution: solution.value, entries: entries.value, notes: notes.value, manualGrid: manualGrid.value, manualEditing: manualEditing.value, smartCandidatesEnabled: smartCandidatesEnabled.value, lastHintStrategy: lastHintStrategy.value, hintHistory: hintHistory.value, difficulty: difficulty.value, sourceChoice: sourceChoice.value, ratingLabel: ratingLabel.value, hodokuScore: hodokuScore.value, hodokuDifficulty: hodokuDifficulty.value, hodokuRatingLoading: hodokuRatingLoading.value, mistakes: mistakes.value, seconds: seconds.value, id: puzzleId.value, sourceLabel: sourceLabel.value }))
+  localStorage.setItem('sudoku-state', JSON.stringify({ puzzle: puzzle.value, solution: solution.value, entries: entries.value, notes: notes.value, manualGrid: manualGrid.value, manualEditing: manualEditing.value, smartCandidatesEnabled: smartCandidatesEnabled.value, lastHintStrategy: lastHintStrategy.value, hintHistory: hintHistory.value, difficulty: difficulty.value, sourceChoice: sourceChoice.value, ratingLabel: ratingLabel.value, hodokuScore: hodokuScore.value, hodokuDifficulty: hodokuDifficulty.value, hodokuRatingLoading: hodokuRatingLoading.value, mistakes: mistakes.value, seconds: seconds.value, id: puzzleId.value, sourceLabel: sourceLabel.value, settlementDismissed: settlementDismissed.value }))
 }
 function rememberState() { history.value.push({ entries: entries.value.slice(), notes: notes.value.map((cellNotes) => cellNotes.slice()), smartCandidatesEnabled: smartCandidatesEnabled.value, lastHintStrategy: lastHintStrategy.value }) }
 function startTimer() { clearInterval(timerId); timerId = setInterval(() => { seconds.value += 1 }, 1000) }
@@ -111,6 +130,12 @@ function clearAdvancedRating() {
   hodokuScore.value = null
   hodokuDifficulty.value = ''
   hodokuRatingLoading.value = false
+}
+function finishGame(message = `完成！用时 ${timerText.value}。`) {
+  clearInterval(timerId)
+  resetSettlementState()
+  setStatus(message, 'success')
+  saveGame()
 }
 function setAdvancedRating(score, difficultyName = '') {
   hodokuScore.value = Number.isFinite(Number(score)) ? Number(score) : null
@@ -147,6 +172,7 @@ async function rateCurrentPuzzle(targetPuzzle = puzzle.value, knownRating = null
 }
 function enterManualMode() {
   clearInterval(timerId)
+  resetSettlementState()
   puzzle.value = []
   solution.value = []
   manualGrid.value = Array(81).fill(0)
@@ -201,6 +227,7 @@ function newGame() {
   entries.value = Array(81).fill(0)
   notes.value = Array.from({ length: 81 }, () => [])
   history.value = []
+  resetSettlementState()
   selected.value = -1
   focusedNumber.value = 0
   pencilMode.value = false
@@ -226,6 +253,7 @@ function startManualGame() {
   notes.value = Array.from({ length: 81 }, () => [])
   history.value = []
   manualEditing.value = false
+  resetSettlementState()
   selected.value = -1
   focusedNumber.value = 0
   smartCandidatesEnabled.value = false
@@ -250,6 +278,7 @@ function applySharedPuzzle(sharedPuzzle, sharedSolution, id, source, label, opti
   notes.value = Array.from({ length: 81 }, () => [])
   history.value = []
   manualEditing.value = false
+  resetSettlementState()
   selected.value = -1
   pencilMode.value = false
   smartCandidatesEnabled.value = false
@@ -318,6 +347,7 @@ function applySharedState(shared) {
   notes.value = shared.notes
   history.value = []
   manualEditing.value = false
+  resetSettlementState()
   selected.value = -1
   focusedNumber.value = 0
   pencilMode.value = false
@@ -385,11 +415,11 @@ async function shareProgress() {
 function loadGame() {
   try {
     const saved = JSON.parse(localStorage.getItem('sudoku-state'))
-    if (!saved?.puzzle || !saved?.solution) return newGame()
-    puzzle.value = saved.puzzle; solution.value = saved.solution; entries.value = saved.entries || Array(81).fill(0); notes.value = saved.notes || Array.from({ length: 81 }, () => []); manualGrid.value = saved.manualGrid || Array(81).fill(0); manualEditing.value = saved.manualEditing ?? saved.sourceChoice === 'manual'; smartCandidatesEnabled.value = Boolean(saved.smartCandidatesEnabled); lastHintStrategy.value = saved.lastHintStrategy || ''; hintHistory.value = Array.isArray(saved.hintHistory) ? saved.hintHistory : []
-    difficulty.value = saved.difficulty || 'easy'; sourceChoice.value = saved.sourceChoice || 'mixed'; ratingLabel.value = saved.ratingLabel || ratePuzzle(puzzle.value)
-    hodokuScore.value = Number.isFinite(Number(saved.hodokuScore)) ? Number(saved.hodokuScore) : null; hodokuDifficulty.value = saved.hodokuDifficulty || ''; hodokuRatingLoading.value = Boolean(saved.hodokuRatingLoading)
-    mistakes.value = saved.mistakes || 0; seconds.value = saved.seconds || 0; puzzleId.value = saved.id || '-'; sourceLabel.value = saved.sourceLabel || '本地生成'; if (manualEditing.value) { clearInterval(timerId); setStatus('请在棋盘中输入题目。') } else { startTimer(); if (hodokuRatingLoading.value || !hodokuScore.value) rateCurrentPuzzle(puzzle.value) }
+  if (!saved?.puzzle || !saved?.solution) return newGame()
+  puzzle.value = saved.puzzle; solution.value = saved.solution; entries.value = saved.entries || Array(81).fill(0); notes.value = saved.notes || Array.from({ length: 81 }, () => []); manualGrid.value = saved.manualGrid || Array(81).fill(0); manualEditing.value = saved.manualEditing ?? saved.sourceChoice === 'manual'; smartCandidatesEnabled.value = Boolean(saved.smartCandidatesEnabled); lastHintStrategy.value = saved.lastHintStrategy || ''; hintHistory.value = Array.isArray(saved.hintHistory) ? saved.hintHistory : []
+  difficulty.value = saved.difficulty || 'easy'; sourceChoice.value = saved.sourceChoice || 'mixed'; ratingLabel.value = saved.ratingLabel || ratePuzzle(puzzle.value)
+  hodokuScore.value = Number.isFinite(Number(saved.hodokuScore)) ? Number(saved.hodokuScore) : null; hodokuDifficulty.value = saved.hodokuDifficulty || ''; hodokuRatingLoading.value = Boolean(saved.hodokuRatingLoading)
+  mistakes.value = saved.mistakes || 0; seconds.value = saved.seconds || 0; puzzleId.value = saved.id || '-'; sourceLabel.value = saved.sourceLabel || '本地生成'; settlementDismissed.value = Boolean(saved.settlementDismissed); if (manualEditing.value) { clearInterval(timerId); setStatus('请在棋盘中输入题目。') } else { startTimer(); if (hodokuRatingLoading.value || !hodokuScore.value) rateCurrentPuzzle(puzzle.value) }
   } catch { newGame() }
 }
 function enterManualNumber(number) {
@@ -575,12 +605,29 @@ async function giveHint() {
   saveGame()
 }
 function checkComplete() {
-  const complete = entries.value.every((number, index) => { const { row, col } = cellAt(index); return (puzzle.value[row][col] || number) === solution.value[row][col] })
-  if (complete) { setStatus(`完成！用时 ${timerText.value}。`, 'success'); clearInterval(timerId) }
+  if (isSolvedBoard.value) finishGame()
 }
 function checkAnswer() { const wrong = entries.value.some((number, index) => number && number !== solution.value[cellAt(index).row][cellAt(index).col]); setStatus(wrong ? '发现错误数字，请继续检查。' : '目前填写正确，继续完成棋盘。', wrong ? 'error' : 'success') }
 function toggleTheme() { isDark.value = !isDark.value; localStorage.setItem('sudoku-theme', isDark.value ? 'dark' : 'light') }
-function onKeydown(event) { if (/^[1-9]$/.test(event.key)) enterNumber(Number(event.key)); if (event.key === 'Backspace' || event.key === 'Delete') enterNumber(0) }
+async function copyCompletionText() {
+  await copyText(shareResultText.value, '战绩文案已复制。')
+}
+function dismissSettlementCard() {
+  settlementDismissed.value = true
+  saveGame()
+}
+watch(isSolvedBoard, (done, previous) => {
+  if (done && !previous) finishGame()
+  else if (!done) settlementDismissed.value = false
+})
+function onKeydown(event) {
+  if (showSettlementCard.value) {
+    if (event.key === 'Escape') dismissSettlementCard()
+    return
+  }
+  if (/^[1-9]$/.test(event.key)) enterNumber(Number(event.key))
+  if (event.key === 'Backspace' || event.key === 'Delete') enterNumber(0)
+}
 watch([puzzle, entries, notes, manualGrid, mistakes, seconds], saveGame, { deep: true })
 function handleSourceChange() { if (sourceChoice.value === 'manual') enterManualMode(); else if (manualEditing.value) { manualEditing.value = false; setStatus('已切换题目来源，点击按钮开始。') } }
 watch(isDark, (value) => { document.body.classList.toggle('dark-page', value) }, { immediate: true })
@@ -653,6 +700,33 @@ onUnmounted(() => { clearInterval(timerId); clearTimeout(numberClickTimer); clea
         </section>
       </aside>
     </section>
+    <div v-if="showSettlementCard" class="settlement-overlay" role="dialog" aria-modal="true" aria-labelledby="settlement-title" @click.self="dismissSettlementCard">
+      <section class="settlement-card">
+        <div class="settlement-top">
+          <div>
+            <p class="eyebrow">结算卡片</p>
+            <h2 id="settlement-title">通关成功</h2>
+            <p class="settlement-subtitle">{{ difficultyLabel }} · {{ sourceLabel }}</p>
+          </div>
+          <button class="icon-button settlement-close" type="button" title="关闭" aria-label="关闭" @click="dismissSettlementCard">×</button>
+        </div>
+        <div class="settlement-time">{{ timerText }}</div>
+        <p class="settlement-caption">{{ shareResultText }}</p>
+        <dl class="settlement-summary">
+          <div v-for="item in completionSummary" :key="item.label" class="settlement-item">
+            <dt>{{ item.label }}</dt>
+            <dd>{{ item.value }}</dd>
+          </div>
+        </dl>
+        <div class="settlement-footer">
+          <p class="settlement-note">截图即可分享本局成绩。</p>
+          <div class="settlement-actions">
+            <button class="action-button settlement-action" type="button" @click="copyCompletionText"><span>⧉</span>复制文案</button>
+            <button class="action-button settlement-action" type="button" @click="beginPuzzle"><span>↻</span>再来一局</button>
+          </div>
+        </div>
+      </section>
+    </div>
     <footer class="footer">题目在浏览器本地生成，不上传任何数据。</footer>
   </main>
 </template>
