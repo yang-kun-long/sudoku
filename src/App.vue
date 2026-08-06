@@ -33,7 +33,9 @@ const mistakes = ref(0)
 const seconds = ref(0)
 const status = ref('选择一个格子，然后输入数字。')
 const statusType = ref('')
-const settlementDismissed = ref(false)
+const puzzleSessionId = ref(0)
+const completionSessionId = ref(-1)
+const dismissedSessionId = ref(-1)
 const isDark = ref(localStorage.getItem('sudoku-theme') === 'dark')
 let timerId
 let numberClickTimer
@@ -49,7 +51,7 @@ const isSolvedBoard = computed(() => {
     return (puzzle.value[row]?.[col] || number) === solution.value[row]?.[col]
   })
 })
-const showSettlementCard = computed(() => isSolvedBoard.value && !settlementDismissed.value)
+const showSettlementCard = computed(() => isSolvedBoard.value && completionSessionId.value === puzzleSessionId.value && dismissedSessionId.value !== puzzleSessionId.value)
 const hodokuRatingText = computed(() => {
   if (hodokuRatingLoading.value) return '评分中'
   if (hodokuScore.value) return String(hodokuScore.value)
@@ -94,7 +96,14 @@ const sourceOptions = [
 const hodokuDifficultyNames = { Easy: '简单', Medium: '中等', Hard: '困难', Unfair: '高难', Extreme: '极限' }
 
 function setStatus(message, type = '') { status.value = message; statusType.value = type }
-function resetSettlementState() { settlementDismissed.value = false }
+function resetSettlementState() {
+  completionSessionId.value = -1
+  dismissedSessionId.value = -1
+}
+function beginPuzzleSession() {
+  puzzleSessionId.value += 1
+  resetSettlementState()
+}
 function cellAt(index) { return { row: Math.floor(index / 9), col: index % 9 } }
 function cellName(index) { const { row, col } = cellAt(index); return `第 ${row + 1} 行第 ${col + 1} 列` }
 function isGiven(index) { const { row, col } = cellAt(index); return Boolean(puzzle.value[row]?.[col]) }
@@ -121,7 +130,7 @@ function isNumberInfluenced(index) {
 }
 
 function saveGame() {
-  localStorage.setItem('sudoku-state', JSON.stringify({ puzzle: puzzle.value, solution: solution.value, entries: entries.value, notes: notes.value, manualGrid: manualGrid.value, manualEditing: manualEditing.value, smartCandidatesEnabled: smartCandidatesEnabled.value, lastHintStrategy: lastHintStrategy.value, hintHistory: hintHistory.value, difficulty: difficulty.value, sourceChoice: sourceChoice.value, ratingLabel: ratingLabel.value, hodokuScore: hodokuScore.value, hodokuDifficulty: hodokuDifficulty.value, hodokuRatingLoading: hodokuRatingLoading.value, mistakes: mistakes.value, seconds: seconds.value, id: puzzleId.value, sourceLabel: sourceLabel.value, settlementDismissed: settlementDismissed.value }))
+  localStorage.setItem('sudoku-state', JSON.stringify({ puzzle: puzzle.value, solution: solution.value, entries: entries.value, notes: notes.value, manualGrid: manualGrid.value, manualEditing: manualEditing.value, smartCandidatesEnabled: smartCandidatesEnabled.value, lastHintStrategy: lastHintStrategy.value, hintHistory: hintHistory.value, difficulty: difficulty.value, sourceChoice: sourceChoice.value, ratingLabel: ratingLabel.value, hodokuScore: hodokuScore.value, hodokuDifficulty: hodokuDifficulty.value, hodokuRatingLoading: hodokuRatingLoading.value, mistakes: mistakes.value, seconds: seconds.value, id: puzzleId.value, sourceLabel: sourceLabel.value, puzzleSessionId: puzzleSessionId.value, completionSessionId: completionSessionId.value, dismissedSessionId: dismissedSessionId.value }))
 }
 function rememberState() { history.value.push({ entries: entries.value.slice(), notes: notes.value.map((cellNotes) => cellNotes.slice()), smartCandidatesEnabled: smartCandidatesEnabled.value, lastHintStrategy: lastHintStrategy.value }) }
 function startTimer() { clearInterval(timerId); timerId = setInterval(() => { seconds.value += 1 }, 1000) }
@@ -133,7 +142,8 @@ function clearAdvancedRating() {
 }
 function finishGame(message = `完成！用时 ${timerText.value}。`) {
   clearInterval(timerId)
-  resetSettlementState()
+  completionSessionId.value = puzzleSessionId.value
+  dismissedSessionId.value = -1
   setStatus(message, 'success')
   saveGame()
 }
@@ -172,7 +182,7 @@ async function rateCurrentPuzzle(targetPuzzle = puzzle.value, knownRating = null
 }
 function enterManualMode() {
   clearInterval(timerId)
-  resetSettlementState()
+  beginPuzzleSession()
   puzzle.value = []
   solution.value = []
   manualGrid.value = Array(81).fill(0)
@@ -227,7 +237,7 @@ function newGame() {
   entries.value = Array(81).fill(0)
   notes.value = Array.from({ length: 81 }, () => [])
   history.value = []
-  resetSettlementState()
+  beginPuzzleSession()
   selected.value = -1
   focusedNumber.value = 0
   pencilMode.value = false
@@ -253,7 +263,7 @@ function startManualGame() {
   notes.value = Array.from({ length: 81 }, () => [])
   history.value = []
   manualEditing.value = false
-  resetSettlementState()
+  beginPuzzleSession()
   selected.value = -1
   focusedNumber.value = 0
   smartCandidatesEnabled.value = false
@@ -278,7 +288,7 @@ function applySharedPuzzle(sharedPuzzle, sharedSolution, id, source, label, opti
   notes.value = Array.from({ length: 81 }, () => [])
   history.value = []
   manualEditing.value = false
-  resetSettlementState()
+  beginPuzzleSession()
   selected.value = -1
   pencilMode.value = false
   smartCandidatesEnabled.value = false
@@ -347,7 +357,7 @@ function applySharedState(shared) {
   notes.value = shared.notes
   history.value = []
   manualEditing.value = false
-  resetSettlementState()
+  beginPuzzleSession()
   selected.value = -1
   focusedNumber.value = 0
   pencilMode.value = false
@@ -415,11 +425,14 @@ async function shareProgress() {
 function loadGame() {
   try {
     const saved = JSON.parse(localStorage.getItem('sudoku-state'))
-  if (!saved?.puzzle || !saved?.solution) return newGame()
-  puzzle.value = saved.puzzle; solution.value = saved.solution; entries.value = saved.entries || Array(81).fill(0); notes.value = saved.notes || Array.from({ length: 81 }, () => []); manualGrid.value = saved.manualGrid || Array(81).fill(0); manualEditing.value = saved.manualEditing ?? saved.sourceChoice === 'manual'; smartCandidatesEnabled.value = Boolean(saved.smartCandidatesEnabled); lastHintStrategy.value = saved.lastHintStrategy || ''; hintHistory.value = Array.isArray(saved.hintHistory) ? saved.hintHistory : []
-  difficulty.value = saved.difficulty || 'easy'; sourceChoice.value = saved.sourceChoice || 'mixed'; ratingLabel.value = saved.ratingLabel || ratePuzzle(puzzle.value)
-  hodokuScore.value = Number.isFinite(Number(saved.hodokuScore)) ? Number(saved.hodokuScore) : null; hodokuDifficulty.value = saved.hodokuDifficulty || ''; hodokuRatingLoading.value = Boolean(saved.hodokuRatingLoading)
-  mistakes.value = saved.mistakes || 0; seconds.value = saved.seconds || 0; puzzleId.value = saved.id || '-'; sourceLabel.value = saved.sourceLabel || '本地生成'; settlementDismissed.value = Boolean(saved.settlementDismissed); if (manualEditing.value) { clearInterval(timerId); setStatus('请在棋盘中输入题目。') } else { startTimer(); if (hodokuRatingLoading.value || !hodokuScore.value) rateCurrentPuzzle(puzzle.value) }
+    if (!saved?.puzzle || !saved?.solution) return newGame()
+    puzzle.value = saved.puzzle; solution.value = saved.solution; entries.value = saved.entries || Array(81).fill(0); notes.value = saved.notes || Array.from({ length: 81 }, () => []); manualGrid.value = saved.manualGrid || Array(81).fill(0); manualEditing.value = saved.manualEditing ?? saved.sourceChoice === 'manual'; smartCandidatesEnabled.value = Boolean(saved.smartCandidatesEnabled); lastHintStrategy.value = saved.lastHintStrategy || ''; hintHistory.value = Array.isArray(saved.hintHistory) ? saved.hintHistory : []
+    difficulty.value = saved.difficulty || 'easy'; sourceChoice.value = saved.sourceChoice || 'mixed'; ratingLabel.value = saved.ratingLabel || ratePuzzle(puzzle.value)
+    hodokuScore.value = Number.isFinite(Number(saved.hodokuScore)) ? Number(saved.hodokuScore) : null; hodokuDifficulty.value = saved.hodokuDifficulty || ''; hodokuRatingLoading.value = Boolean(saved.hodokuRatingLoading)
+    puzzleSessionId.value = Number.isFinite(Number(saved.puzzleSessionId)) ? Number(saved.puzzleSessionId) : 0
+    completionSessionId.value = Number.isFinite(Number(saved.completionSessionId)) ? Number(saved.completionSessionId) : -1
+    dismissedSessionId.value = Number.isFinite(Number(saved.dismissedSessionId)) ? Number(saved.dismissedSessionId) : -1
+    mistakes.value = saved.mistakes || 0; seconds.value = saved.seconds || 0; puzzleId.value = saved.id || '-'; sourceLabel.value = saved.sourceLabel || '本地生成'; if (manualEditing.value) { clearInterval(timerId); setStatus('请在棋盘中输入题目。') } else { startTimer(); if (hodokuRatingLoading.value || !hodokuScore.value) rateCurrentPuzzle(puzzle.value) }
   } catch { newGame() }
 }
 function enterManualNumber(number) {
@@ -613,12 +626,12 @@ async function copyCompletionText() {
   await copyText(shareResultText.value, '战绩文案已复制。')
 }
 function dismissSettlementCard() {
-  settlementDismissed.value = true
+  dismissedSessionId.value = puzzleSessionId.value
   saveGame()
 }
 watch(isSolvedBoard, (done, previous) => {
   if (done && !previous) finishGame()
-  else if (!done) settlementDismissed.value = false
+  else if (!done && dismissedSessionId.value === puzzleSessionId.value) dismissedSessionId.value = -1
 })
 function onKeydown(event) {
   if (showSettlementCard.value) {
