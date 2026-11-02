@@ -1,6 +1,19 @@
 :root { --bg:#f4f3ef; --surface:#fffdf9; --ink:#1e2420; --muted:#69716c; --line:#d7d9d1; --strong-line:#8e9991; --accent:#2f6f5e; --accent-soft:#e3efe8; --danger:#b94a42; --shadow:0 18px 45px rgba(31,42,35,.08); }
 * { box-sizing:border-box; }
-body { margin:0; min-width:320px; background:var(--bg); color:var(--ink); font-family:Inter,"Noto Sans SC",system-ui,sans-serif; transition:background .2s,color .2s; }
+@font-face { font-family:"Kunlong Handwriting"; src:url('/fonts/kunlong-handwriting.woff2') format('woff2'); font-weight:400; font-style:normal; font-display:swap; }
+:root { --app-font:Inter,"Noto Sans SC",system-ui,sans-serif; }
+:root[data-font="handwriting"] { --app-font:"Kunlong Handwriting",Inter,"Noto Sans SC",system-ui,sans-serif; }
+body { margin:0; min-width:320px; background:var(--bg); color:var(--ink); font-family:var(--app-font); transition:background .2s,color .2s; }
+.font-settings { position:relative; }
+.font-settings > summary { list-style:none; cursor:pointer; }
+.font-settings > summary::-webkit-details-marker { display:none; }
+.font-settings > summary:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+.font-settings[open] > summary { color:var(--accent); border-color:var(--accent); }
+.font-settings-panel { position:absolute; right:0; top:48px; z-index:20; width:min(248px,calc(100vw - 32px)); padding:16px; border:1px solid var(--line); border-radius:8px; background:var(--surface); box-shadow:var(--shadow); }
+.font-options { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+.font-options button { min-height:40px; padding:6px; border:1px solid var(--line); border-radius:6px; background:transparent; font-size:14px; }
+.font-options button[aria-pressed="true"] { color:var(--accent); border-color:var(--accent); background:var(--accent-soft); }
+.font-settings-panel p { margin:12px 0 0; font-size:12px; color:var(--muted); line-height:1.5; }
 body.dark-page { --bg:#1c2420; --surface:#27312c; --ink:#eef4ee; --muted:#a9b5ac; --line:#435047; --strong-line:#718178; --accent:#8bd0af; --accent-soft:#315347; --danger:#f08d83; --shadow:0 18px 45px rgba(0,0,0,.2); }
 button { font:inherit; color:inherit; cursor:pointer; }
 .app-shell { width:min(1080px,calc(100% - 32px)); margin:0 auto; padding:36px 0 24px; }
