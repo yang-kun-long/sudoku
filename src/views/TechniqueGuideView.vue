@@ -103,25 +103,25 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 <style scoped>
 .guide-shell { width:min(1120px,calc(100% - 32px)); margin:0 auto; padding:36px 0 30px; color:var(--ink); }
 .guide-header { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:24px; }
-.guide-header h1 { font-size:clamp(28px,4vw,38px); }
+.guide-header h1 { font-size:calc(clamp(28px,4vw,38px) * var(--font-scale, 1)); }
 .guide-actions { display:flex; gap:8px; }
-.back-link { min-height:40px; display:flex; align-items:center; padding:0 12px; border:1px solid var(--line); border-radius:7px; background:var(--surface); color:var(--ink); text-decoration:none; font-size:13px; font-weight:750; }
-.icon-button { width:40px; height:40px; display:grid; place-items:center; padding:0; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink); font-size:20px; }
+.back-link { min-height:40px; display:flex; align-items:center; padding:0 12px; border:1px solid var(--line); border-radius:7px; background:var(--surface); color:var(--ink); text-decoration:none; font-size:calc(13px * var(--font-scale, 1)); font-weight:750; }
+.icon-button { width:40px; height:40px; display:grid; place-items:center; padding:0; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink); font-size:calc(20px * var(--font-scale, 1)); }
 .guide-layout { display:grid; grid-template-columns:270px minmax(0,1fr); gap:34px; align-items:start; }
 .guide-nav { position:sticky; top:18px; display:grid; gap:20px; padding-right:18px; border-right:1px solid var(--line); }
 .guide-nav section { display:grid; gap:7px; }
-.guide-nav h2 { margin:0 0 2px; color:var(--muted); font-size:11px; font-weight:800; letter-spacing:.08em; }
-.guide-nav a { min-height:34px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:0 9px; border:1px solid transparent; border-radius:6px; color:var(--muted); text-decoration:none; font-size:13px; font-weight:700; }
+.guide-nav h2 { margin:0 0 2px; color:var(--muted); font-size:calc(11px * var(--font-scale, 1)); font-weight:800; letter-spacing:.08em; }
+.guide-nav a { min-height:34px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:0 9px; border:1px solid transparent; border-radius:6px; color:var(--muted); text-decoration:none; font-size:calc(13px * var(--font-scale, 1)); font-weight:700; }
 .guide-nav a.active { border-color:var(--accent); background:var(--accent-soft); color:var(--accent); }
-.guide-nav small { color:inherit; font-size:10px; font-weight:800; opacity:.72; }
+.guide-nav small { color:inherit; font-size:calc(10px * var(--font-scale, 1)); font-weight:800; opacity:.72; }
 .guide-article { max-width:740px; }
 .guide-meta { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
-.guide-meta span { min-height:24px; display:inline-flex; align-items:center; padding:0 8px; border:1px solid var(--line); border-radius:5px; color:var(--accent); font-size:11px; font-weight:800; }
-.guide-article h2 { margin:0 0 14px; font-size:clamp(25px,3.5vw,38px); line-height:1.2; }
-.guide-summary { margin:0 0 24px; color:var(--muted); font-size:16px; line-height:1.8; }
+.guide-meta span { min-height:24px; display:inline-flex; align-items:center; padding:0 8px; border:1px solid var(--line); border-radius:5px; color:var(--accent); font-size:calc(11px * var(--font-scale, 1)); font-weight:800; }
+.guide-article h2 { margin:0 0 14px; font-size:calc(clamp(25px,3.5vw,38px) * var(--font-scale, 1)); line-height:1.2; }
+.guide-summary { margin:0 0 24px; color:var(--muted); font-size:calc(16px * var(--font-scale, 1)); line-height:1.8; }
 .lesson-block { padding:22px 0; border-top:1px solid var(--line); }
-.lesson-block h3 { margin:0 0 10px; font-size:17px; }
-.lesson-block p,.lesson-block li { color:var(--muted); font-size:14px; line-height:1.85; }
+.lesson-block h3 { margin:0 0 10px; font-size:calc(17px * var(--font-scale, 1)); }
+.lesson-block p,.lesson-block li { color:var(--muted); font-size:calc(14px * var(--font-scale, 1)); line-height:1.85; }
 .lesson-block p { margin:0; }
 .lesson-block ol,.lesson-block ul { margin:0; padding-left:22px; }
 .lesson-block li { padding-left:4px; }
@@ -129,8 +129,8 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 .example-block p+ol { margin-top:12px; }
 .example-conclusion { margin-top:14px !important; padding:10px 12px; border-left:3px solid var(--accent); background:var(--accent-soft); color:var(--ink) !important; }
 .article-links { display:flex; flex-wrap:wrap; gap:8px; padding-top:20px; border-top:1px solid var(--line); }
-.article-links a { min-height:34px; display:inline-flex; align-items:center; padding:0 10px; border:1px solid var(--line); border-radius:6px; color:var(--accent); text-decoration:none; font-size:13px; font-weight:750; }
+.article-links a { min-height:34px; display:inline-flex; align-items:center; padding:0 10px; border:1px solid var(--line); border-radius:6px; color:var(--accent); text-decoration:none; font-size:calc(13px * var(--font-scale, 1)); font-weight:750; }
 @media (hover:hover) { .guide-nav a:hover,.article-links a:hover,.back-link:hover { border-color:var(--accent); color:var(--accent); } }
 @media (max-width:820px) { .guide-layout { grid-template-columns:1fr; } .guide-nav { position:static; grid-template-columns:repeat(2,minmax(0,1fr)); padding:0 0 20px; border-right:0; border-bottom:1px solid var(--line); } }
-@media (max-width:520px) { .guide-shell { width:min(100% - 18px,1120px); padding-top:22px; } .guide-header { align-items:flex-start; flex-direction:column; gap:12px; } .guide-actions { width:100%; } .back-link { flex:1; justify-content:center; } .icon-button { flex:0 0 40px; } .guide-nav { grid-template-columns:1fr; } .guide-article h2 { font-size:24px; } }
+@media (max-width:520px) { .guide-shell { width:min(100% - 18px,1120px); padding-top:22px; } .guide-header { align-items:flex-start; flex-direction:column; gap:12px; } .guide-actions { width:100%; } .back-link { flex:1; justify-content:center; } .icon-button { flex:0 0 40px; } .guide-nav { grid-template-columns:1fr; } .guide-article h2 { font-size:calc(24px * var(--font-scale, 1)); } }
 </style>

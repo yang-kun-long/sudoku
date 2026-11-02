@@ -535,18 +535,18 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 <style scoped>
 .techniques-shell { width:min(1080px,calc(100% - 32px)); margin:0 auto; padding:36px 0 28px; color:var(--ink); }
 .techniques-header { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:24px; }
-.techniques-header h1 { font-size:clamp(28px,4vw,38px); }
+.techniques-header h1 { font-size:calc(clamp(28px,4vw,38px) * var(--font-scale, 1)); }
 .techniques-actions { display:flex; align-items:center; gap:10px; }
-.back-link { min-height:40px; display:flex; align-items:center; padding:0 12px; border:1px solid var(--line); border-radius:7px; background:var(--surface); color:var(--ink); text-decoration:none; font-size:13px; font-weight:700; }
+.back-link { min-height:40px; display:flex; align-items:center; padding:0 12px; border:1px solid var(--line); border-radius:7px; background:var(--surface); color:var(--ink); text-decoration:none; font-size:calc(13px * var(--font-scale, 1)); font-weight:700; }
 .technique-picker { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:20px; }
 .technique-group { min-width:0; padding:12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); }
-.technique-group > span { display:block; margin-bottom:8px; color:var(--accent); font-size:11px; font-weight:850; }
+.technique-group > span { display:block; margin-bottom:8px; color:var(--accent); font-size:calc(11px * var(--font-scale, 1)); font-weight:850; }
 .technique-group > div { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
-.technique-group button { min-width:0; min-height:34px; padding:0 8px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--muted); font-size:12px; font-weight:750; white-space:normal; }
+.technique-group button { min-width:0; min-height:34px; padding:0 8px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--muted); font-size:calc(12px * var(--font-scale, 1)); font-weight:750; white-space:normal; }
 .technique-group button.active { border-color:var(--accent); background:var(--accent); color:#fff; }
 .technique-stage { display:grid; grid-template-columns:minmax(320px,560px) minmax(260px,1fr); gap:clamp(26px,5vw,58px); align-items:center; padding:24px 0 34px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
 .demo-area { margin:0; min-width:0; }
-.demo-toolbar { display:flex; justify-content:space-between; align-items:center; min-height:34px; margin-bottom:10px; color:var(--muted); font-size:11px; font-weight:800; }
+.demo-toolbar { display:flex; justify-content:space-between; align-items:center; min-height:34px; margin-bottom:10px; color:var(--muted); font-size:calc(11px * var(--font-scale, 1)); font-weight:800; }
 .demo-toolbar > div { display:flex; gap:6px; }
 .demo-toolbar button { width:32px; height:32px; padding:0; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--accent); }
 .demo-board { position:relative; width:min(100%,540px); aspect-ratio:1; display:grid; grid-template-columns:repeat(9,1fr); grid-template-rows:repeat(9,1fr); border:2px solid var(--strong-line); background:var(--strong-line); gap:1px; overflow:hidden; }
@@ -554,9 +554,9 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 .demo-cell:nth-child(3n) { border-right:2px solid var(--strong-line); }
 .demo-cell:nth-child(9n) { border-right:0; }
 .demo-cell:nth-child(n+19):nth-child(-n+27),.demo-cell:nth-child(n+46):nth-child(-n+54) { border-bottom:2px solid var(--strong-line); }
-.demo-candidate { width:100%; height:100%; display:grid; place-items:center; opacity:0; font-size:clamp(7px,1.25vw,11px); font-weight:750; line-height:1; }
+.demo-candidate { width:100%; height:100%; display:grid; place-items:center; opacity:0; font-size:calc(clamp(7px,1.25vw,11px) * var(--font-scale, 1)); font-weight:750; line-height:1; }
 .demo-candidate.visible { opacity:1; }
-.demo-value { position:absolute; inset:0; display:grid; place-items:center; font-size:clamp(19px,3.2vw,30px); line-height:1; }
+.demo-value { position:absolute; inset:0; display:grid; place-items:center; font-size:calc(clamp(19px,3.2vw,30px) * var(--font-scale, 1)); line-height:1; }
 .demo-cell.given { background:#f0f2ed; color:var(--ink); }
 .demo-cell.premise,.demo-cell.wing,.demo-cell.base,.demo-cell.chain-node { background:#e7f0fa; }
 .demo-cell.pivot { background:#f5dfaa; box-shadow:inset 0 0 0 2px #bd8423; }
@@ -581,7 +581,7 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 .demo-board.exocet:not(.paused) .demo-candidate.key { animation:exocet-key 7.2s ease-in-out infinite; }
 .demo-board.exocet:not(.paused) .demo-candidate.eliminated { animation:exocet-remove 7.2s ease-in-out infinite; }
 .demo-board.paused * { animation-play-state:paused !important; }
-.demo-legend { display:flex; flex-wrap:wrap; gap:14px; margin-top:12px; color:var(--muted); font-size:11px; }
+.demo-legend { display:flex; flex-wrap:wrap; gap:14px; margin-top:12px; color:var(--muted); font-size:calc(11px * var(--font-scale, 1)); }
 .demo-legend span { display:flex; align-items:center; gap:5px; }
 .demo-legend i { width:11px; height:11px; display:block; border-radius:2px; }
 .legend-source { background:#e7f0fa; border:1px solid #76a2c7; }
@@ -593,40 +593,40 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 .legend-strong { background:#256295; }
 .legend-weak { background:linear-gradient(90deg,#9b5b1f 0 45%,transparent 45% 58%,#9b5b1f 58%); border:0 !important; }
 .technique-copy { min-width:0; }
-.level-label { color:var(--accent); font-size:11px; font-weight:800; }
-.technique-copy h2 { margin:8px 0 16px; font-size:clamp(22px,3vw,30px); line-height:1.25; }
-.technique-copy p { margin:0 0 16px; color:var(--muted); font-size:14px; line-height:1.8; }
+.level-label { color:var(--accent); font-size:calc(11px * var(--font-scale, 1)); font-weight:800; }
+.technique-copy h2 { margin:8px 0 16px; font-size:calc(clamp(22px,3vw,30px) * var(--font-scale, 1)); line-height:1.25; }
+.technique-copy p { margin:0 0 16px; color:var(--muted); font-size:calc(14px * var(--font-scale, 1)); line-height:1.8; }
 .rule-line { padding:12px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); color:var(--ink) !important; }
-.rule-line strong { display:block; margin-bottom:4px; color:var(--accent); font-size:11px; }
-.technique-copy ol { margin:18px 0 0; padding-left:22px; color:var(--muted); font-size:13px; line-height:1.8; }
+.rule-line strong { display:block; margin-bottom:4px; color:var(--accent); font-size:calc(11px * var(--font-scale, 1)); }
+.technique-copy ol { margin:18px 0 0; padding-left:22px; color:var(--muted); font-size:calc(13px * var(--font-scale, 1)); line-height:1.8; }
 .technique-copy li { padding-left:4px; }
 .inline-example { margin-top:20px; padding-top:16px; border-top:1px solid var(--line); }
-.inline-example h3 { margin:0 0 9px; font-size:16px; line-height:1.35; }
-.inline-example p { margin-bottom:12px; font-size:13px; line-height:1.75; }
-.inline-example ol { margin-top:10px; font-size:12px; line-height:1.7; }
+.inline-example h3 { margin:0 0 9px; font-size:calc(16px * var(--font-scale, 1)); line-height:1.35; }
+.inline-example p { margin-bottom:12px; font-size:calc(13px * var(--font-scale, 1)); line-height:1.75; }
+.inline-example ol { margin-top:10px; font-size:calc(12px * var(--font-scale, 1)); line-height:1.7; }
 .inline-conclusion { margin:14px 0 0 !important; padding:10px 11px; border-left:3px solid var(--accent); background:var(--accent-soft); color:var(--ink) !important; }
-.tutorial-link { min-height:36px; display:inline-flex; align-items:center; margin-top:18px; padding:0 11px; border:1px solid var(--line); border-radius:6px; color:var(--accent); text-decoration:none; font-size:13px; font-weight:800; }
+.tutorial-link { min-height:36px; display:inline-flex; align-items:center; margin-top:18px; padding:0 11px; border:1px solid var(--line); border-radius:6px; color:var(--accent); text-decoration:none; font-size:calc(13px * var(--font-scale, 1)); font-weight:800; }
 .term-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 18px; margin:20px 0 0; padding-top:4px; border-top:1px solid var(--line); }
 .term-list div { padding:11px 0; border-bottom:1px solid var(--line); }
-.term-list dt { color:var(--accent); font-size:12px; font-weight:800; }
-.term-list dd { margin:4px 0 0; color:var(--muted); font-size:12px; line-height:1.65; }
+.term-list dt { color:var(--accent); font-size:calc(12px * var(--font-scale, 1)); font-weight:800; }
+.term-list dd { margin:4px 0 0; color:var(--muted); font-size:calc(12px * var(--font-scale, 1)); line-height:1.65; }
 .strategy-library { padding:34px 0 28px; border-bottom:1px solid var(--line); }
 .library-heading { display:flex; align-items:end; justify-content:space-between; gap:24px; }
-.library-heading h2 { margin:7px 0 0; font-size:24px; }
-.strategy-search { display:grid; gap:5px; width:min(280px,100%); color:var(--muted); font-size:11px; font-weight:800; }
-.strategy-search input { width:100%; height:38px; padding:0 11px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink); font:inherit; font-size:13px; font-weight:500; letter-spacing:0; }
-.library-count { margin:14px 0 20px; color:var(--muted); font-size:12px; }
+.library-heading h2 { margin:7px 0 0; font-size:calc(24px * var(--font-scale, 1)); }
+.strategy-search { display:grid; gap:5px; width:min(280px,100%); color:var(--muted); font-size:calc(11px * var(--font-scale, 1)); font-weight:800; }
+.strategy-search input { width:100%; height:38px; padding:0 11px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink); font:inherit; font-size:calc(13px * var(--font-scale, 1)); font-weight:500; letter-spacing:0; }
+.library-count { margin:14px 0 20px; color:var(--muted); font-size:calc(12px * var(--font-scale, 1)); }
 .strategy-groups { border-top:1px solid var(--line); }
 .strategy-groups details { border-bottom:1px solid var(--line); }
-.strategy-groups summary { min-height:48px; display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--ink); cursor:pointer; font-size:13px; font-weight:800; list-style:none; }
+.strategy-groups summary { min-height:48px; display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--ink); cursor:pointer; font-size:calc(13px * var(--font-scale, 1)); font-weight:800; list-style:none; }
 .strategy-groups summary::-webkit-details-marker { display:none; }
-.strategy-groups summary::before { content:'+'; width:16px; color:var(--accent); font-size:17px; }
+.strategy-groups summary::before { content:'+'; width:16px; color:var(--accent); font-size:calc(17px * var(--font-scale, 1)); }
 .strategy-groups details[open] summary::before { content:'−'; }
-.strategy-groups summary span { margin-left:auto; color:var(--muted); font-size:11px; }
+.strategy-groups summary span { margin-left:auto; color:var(--muted); font-size:calc(11px * var(--font-scale, 1)); }
 .strategy-tags { display:flex; flex-wrap:wrap; gap:6px; padding:0 0 16px 28px; }
-.strategy-tags span,.strategy-tags a { padding:5px 8px; border:1px solid var(--line); border-radius:4px; background:var(--surface); color:var(--muted); font-size:11px; line-height:1.3; text-decoration:none; }
+.strategy-tags span,.strategy-tags a { padding:5px 8px; border:1px solid var(--line); border-radius:4px; background:var(--surface); color:var(--muted); font-size:calc(11px * var(--font-scale, 1)); line-height:1.3; text-decoration:none; }
 .strategy-tags a { color:var(--accent); }
-.techniques-footer { padding-top:20px; text-align:center; font-size:12px; }
+.techniques-footer { padding-top:20px; text-align:center; font-size:calc(12px * var(--font-scale, 1)); }
 .techniques-footer a { color:var(--accent); }
 .dark .demo-cell.premise,.dark .demo-cell.wing,.dark .demo-cell.base,.dark .demo-cell.chain-node { background:#344e5c; }
 .dark .demo-cell.given { background:#303b35; }
@@ -645,6 +645,6 @@ onUnmounted(() => { document.title = '数独 · Sudoku Lab' })
 @keyframes exocet-remove { 0%,67%,100% { opacity:1; transform:scale(1); text-decoration:none; } 76%,90% { opacity:.12; transform:scale(.55); text-decoration:line-through; } }
 @media (max-width:900px) { .technique-picker { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:760px) { .techniques-shell { padding-top:22px; } .technique-stage { grid-template-columns:1fr; align-items:start; } .demo-board { margin:0 auto; } .technique-copy { max-width:640px; } }
-@media (max-width:460px) { .techniques-shell { width:min(100% - 18px,1080px); } .techniques-header { gap:8px; } .techniques-header .eyebrow { display:none; } .techniques-header h1 { font-size:23px; } .back-link { width:34px; min-height:32px; overflow:hidden; white-space:nowrap; padding:0 9px; color:transparent; font-size:0; } .back-link::before { content:'←'; color:var(--ink); font-size:18px; } .techniques-actions { gap:5px; } .technique-picker { grid-template-columns:1fr; gap:8px; margin-bottom:16px; } .technique-group { padding:10px; } .technique-group > div { grid-template-columns:repeat(3,minmax(0,1fr)); } .technique-group button { min-height:34px; padding:0 5px; font-size:12px; } .technique-stage { padding-top:16px; gap:24px; } .demo-toolbar { margin-bottom:7px; } .technique-copy h2 { font-size:21px; } .term-list { grid-template-columns:1fr; } .library-heading { align-items:stretch; flex-direction:column; gap:16px; } .strategy-search { width:100%; } .strategy-tags { padding-left:0; } }
+@media (max-width:460px) { .techniques-shell { width:min(100% - 18px,1080px); } .techniques-header { gap:8px; } .techniques-header .eyebrow { display:none; } .techniques-header h1 { font-size:calc(23px * var(--font-scale, 1)); } .back-link { width:34px; min-height:32px; overflow:hidden; white-space:nowrap; padding:0 9px; color:transparent; font-size:calc(0 * var(--font-scale, 1)); } .back-link::before { content:'←'; color:var(--ink); font-size:calc(18px * var(--font-scale, 1)); } .techniques-actions { gap:5px; } .technique-picker { grid-template-columns:1fr; gap:8px; margin-bottom:16px; } .technique-group { padding:10px; } .technique-group > div { grid-template-columns:repeat(3,minmax(0,1fr)); } .technique-group button { min-height:34px; padding:0 5px; font-size:calc(12px * var(--font-scale, 1)); } .technique-stage { padding-top:16px; gap:24px; } .demo-toolbar { margin-bottom:7px; } .technique-copy h2 { font-size:calc(21px * var(--font-scale, 1)); } .term-list { grid-template-columns:1fr; } .library-heading { align-items:stretch; flex-direction:column; gap:16px; } .strategy-search { width:100%; } .strategy-tags { padding-left:0; } }
 @media (prefers-reduced-motion:reduce) { .demo-board * { animation:none !important; } .pattern-guide { opacity:1; transform:none; } .demo-chain-arrow { opacity:1; } }
 </style>
