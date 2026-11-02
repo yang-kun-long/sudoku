@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 
-const selected = ref(localStorage.getItem('sudoku-font') === 'handwriting' ? 'handwriting' : 'default')
+const selected = ref(localStorage.getItem('sudoku-font') === 'default' ? 'default' : 'handwriting')
 function chooseFont(value) {
   selected.value = value
   document.documentElement.dataset.font = value
